@@ -78,8 +78,6 @@ const PrepCard = ({ prep }: PrepCardProps) => {
             <div className="flex items-center gap-2 text-xs text-zinc-400 mb-3">
               <Calendar size={12} />
               <span>{getRelativeTime(prep.createdAt)}</span>
-              <span>•</span>
-              <span>Examen: {new Date(prep.fechaExamen).toLocaleDateString('es-ES', { month: 'short', day: 'numeric' })}</span>
             </div>
 
             {tags.length > 0 && (

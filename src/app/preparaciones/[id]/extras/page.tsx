@@ -53,9 +53,8 @@ export default function DocumentosExtraPage({
           setPreparacion({
             id: docSnap.id,
             ...data,
-            fechaExamen: data.fechaExamen.toDate(),
-            createdAt: data.createdAt.toDate(),
-            updatedAt: data.updatedAt.toDate(),
+            createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : new Date(),
+            updatedAt: data.updatedAt?.toDate ? data.updatedAt.toDate() : new Date(),
             documentosExtra,
             materialesGenerados,
             forumPosts,

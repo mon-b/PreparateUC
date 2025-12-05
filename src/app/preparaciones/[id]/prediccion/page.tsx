@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { Brain, Loader2, Sparkles, TrendingUp, FileText, ChevronRight, ExternalLink, Lock } from 'lucide-react';
 import { FirestoreService } from '@/services/firestore.service';
 import { Preparacion, Ejercicio } from '@/types/preparacion';
@@ -12,6 +12,7 @@ export default function PredictionPage({
 }: {
   params: { id: string };
 }) {
+  const { user } = useAuth();
   const [preparacion, setPreparacion] = useState<Preparacion | null>(null);
   const [loading, setLoading] = useState(true);
   const [generatingTema, setGeneratingTema] = useState<string | null>(null);
@@ -110,10 +111,6 @@ export default function PredictionPage({
       const { data: latexCodeData } = await responseLatex.json();
       setLatexCode(latexCodeData);
 
-<<<<<<< HEAD
-      // Paso 3: Guardar en Firestore
-      setCurrentStep('Guardando material...');
-=======
       // Paso 3: Compilar LaTeX a PDF (SKIP for now - can be done later)
       setCurrentStep('Preparando para guardar...');
       let pdfUrl = '';
@@ -140,7 +137,6 @@ export default function PredictionPage({
 
       // Paso 5: Actualizar Firestore
       setCurrentStep('Guardando material generado...');
->>>>>>> ae8d5f630b654567ab68f9a15535f2e7f9a28bc6
       const nuevoMaterial = {
         temaId: temaNombre.toLowerCase().replace(/\s+/g, '-'),
         temaNombre: temaNombre,
@@ -149,22 +145,6 @@ export default function PredictionPage({
         createdAt: new Date(),
       };
 
-<<<<<<< HEAD
-      const materialesActuales = preparacion.materialesGenerados || [];
-      await FirestoreService.actualizarPreparacion(params.id, {
-        materialesGenerados: [...materialesActuales, nuevoMaterial],
-      });
-
-      // Paso 4: Abrir en Overleaf
-      setCurrentStep('¡Material listo! Abriendo Overleaf...');
-
-      // Intentar abrir automáticamente
-      setTimeout(() => {
-        if (overleafFormRef.current) {
-          overleafFormRef.current.submit();
-        }
-      }, 500);
-=======
       console.log('=== DEBUG Guardando Material ===');
       console.log('Preparation ID:', params.id);
       console.log('Nuevo material a guardar:', nuevoMaterial);
@@ -187,7 +167,6 @@ export default function PredictionPage({
         console.error('❌ ERROR guardando en Firestore:', firestoreError);
         throw firestoreError;
       }
->>>>>>> ae8d5f630b654567ab68f9a15535f2e7f9a28bc6
 
       await fetchPreparacion();
 

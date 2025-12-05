@@ -116,8 +116,8 @@ export class FirestoreService {
         return {
           id: docSnap.id,
           ...data,
-          createdAt: data.createdAt.toDate(),
-          updatedAt: data.updatedAt.toDate(),
+          createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : new Date(),
+          updatedAt: data.updatedAt?.toDate ? data.updatedAt.toDate() : new Date(),
           materialesGenerados,
           documentosExtra,
           forumPosts,
@@ -167,17 +167,11 @@ export class FirestoreService {
         preparaciones.push({
           id: doc.id,
           ...data,
-<<<<<<< HEAD
-          createdAt: data.createdAt.toDate(),
-          updatedAt: data.updatedAt.toDate(),
-=======
-          fechaExamen: data.fechaExamen?.toDate ? data.fechaExamen.toDate() : new Date(),
           createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : new Date(),
           updatedAt: data.updatedAt?.toDate ? data.updatedAt.toDate() : new Date(),
           materialesGenerados,
           documentosExtra,
           forumPosts,
->>>>>>> ae8d5f630b654567ab68f9a15535f2e7f9a28bc6
         } as Preparacion);
       });
 
@@ -261,17 +255,11 @@ export class FirestoreService {
         preparaciones.push({
           id: doc.id,
           ...data,
-<<<<<<< HEAD
-          createdAt: data.createdAt.toDate(),
-          updatedAt: data.updatedAt.toDate(),
-=======
-          fechaExamen: data.fechaExamen?.toDate ? data.fechaExamen.toDate() : new Date(),
           createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : new Date(),
           updatedAt: data.updatedAt?.toDate ? data.updatedAt.toDate() : new Date(),
           materialesGenerados,
           documentosExtra,
           forumPosts,
->>>>>>> ae8d5f630b654567ab68f9a15535f2e7f9a28bc6
         } as Preparacion);
       });
 

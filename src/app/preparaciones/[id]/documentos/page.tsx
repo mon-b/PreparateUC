@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useRef } from 'react';
-import { FileText, Download, Calendar, Loader2, ExternalLink } from 'lucide-react';
+import { FileText, Download, Calendar, Loader2, ExternalLink, Wifi, WifiOff } from 'lucide-react';
 import { FirestoreService } from '@/services/firestore.service';
 import { Preparacion } from '@/types/preparacion';
 import { doc, onSnapshot } from 'firebase/firestore';
@@ -15,6 +15,7 @@ export default function DocumentosGeneradosPage({
   const [preparacion, setPreparacion] = useState<Preparacion | null>(null);
   const [loading, setLoading] = useState(true);
   const [selectedLatex, setSelectedLatex] = useState<string>('');
+  const [isConnected, setIsConnected] = useState(true);
   const overleafFormRef = useRef<HTMLFormElement>(null);
 
   useEffect(() => {
@@ -49,9 +50,8 @@ export default function DocumentosGeneradosPage({
           setPreparacion({
             id: docSnap.id,
             ...data,
-            fechaExamen: data.fechaExamen.toDate(),
-            createdAt: data.createdAt.toDate(),
-            updatedAt: data.updatedAt.toDate(),
+            createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : new Date(),
+            updatedAt: data.updatedAt?.toDate ? data.updatedAt.toDate() : new Date(),
             materialesGenerados,
             forumPosts,
             documentosExtra,
