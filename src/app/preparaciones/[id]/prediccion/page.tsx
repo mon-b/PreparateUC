@@ -111,31 +111,7 @@ export default function PredictionPage({
       const { data: latexCodeData } = await responseLatex.json();
       setLatexCode(latexCodeData);
 
-      // Paso 3: Compilar LaTeX a PDF (SKIP for now - can be done later)
-      setCurrentStep('Preparando para guardar...');
-      let pdfUrl = '';
-
-      // Try to compile LaTeX, but don't fail if it doesn't work
-      try {
-        setCurrentStep('Compilando LaTeX a PDF...');
-        const pdfBlob = await compilarLatexAPDF(latexCode);
-
-        // Paso 4: Subir PDF a Firebase Storage
-        setCurrentStep('Subiendo PDF a Firebase Storage...');
-        const pdfFile = new File([pdfBlob], `${temaNombre}_${Date.now()}.pdf`, {
-          type: 'application/pdf',
-        });
-        pdfUrl = await StorageService.uploadFile(
-          pdfFile,
-          `preparaciones/${params.id}/materiales`
-        );
-        console.log('PDF compiled and uploaded successfully:', pdfUrl);
-      } catch (pdfError) {
-        console.error('Error compilando/subiendo PDF (continuando sin PDF):', pdfError);
-        // Continue without PDF - we still have the LaTeX code
-      }
-
-      // Paso 5: Actualizar Firestore
+      // Paso 3: Guardar en Firestore
       setCurrentStep('Guardando material generado...');
       const nuevoMaterial = {
         temaId: temaNombre.toLowerCase().replace(/\s+/g, '-'),
@@ -148,7 +124,7 @@ export default function PredictionPage({
       console.log('=== DEBUG Guardando Material ===');
       console.log('Preparation ID:', params.id);
       console.log('Nuevo material a guardar:', nuevoMaterial);
-      console.log('Ejercicios count:', ejerciciosData.ejercicios?.length);
+      console.log('Ejercicios count:', ejerciciosExtraidos.length);
 
       const materialesActuales = preparacion.materialesGenerados || [];
       console.log('Materiales actuales antes de guardar:', materialesActuales);
@@ -169,6 +145,16 @@ export default function PredictionPage({
       }
 
       await fetchPreparacion();
+
+      // Paso 4: Abrir en Overleaf
+      setCurrentStep('¡Material listo! Abriendo Overleaf...');
+
+      // Intentar abrir automáticamente
+      setTimeout(() => {
+        if (overleafFormRef.current) {
+          overleafFormRef.current.submit();
+        }
+      }, 500);
 
       // Show success message
       setSuccessMessage(`Material para "${temaNombre}" generado exitosamente y abierto en Overleaf.`);
