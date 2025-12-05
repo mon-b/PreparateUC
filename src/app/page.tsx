@@ -26,20 +26,12 @@ export default function Home() {
                 Crear Preparación
               </Link>
               <Link
-                href="/mis-preparaciones"
+                href="/landing"
                 className="px-8 py-4 bg-zinc-900 text-blue-400 border-2 border-zinc-800 rounded-lg text-lg font-semibold hover:bg-zinc-800 transition-colors"
               >
-                Mis Preparaciones
+                Ver Preparaciones
               </Link>
             </div>
-
-            {/* --- NUEVO BOTÓN PARA IR A LA VISTA SORA --- */}
-            <Link
-              href="/landing"
-              className="mt-6 px-6 py-2 rounded-full border border-purple-500/30 bg-purple-900/20 text-purple-400 text-sm font-medium hover:bg-purple-900/30 transition-colors flex items-center gap-2"
-            >
-              ✨ Ver Demo Interfaz Sora →
-            </Link>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-16 text-left">
