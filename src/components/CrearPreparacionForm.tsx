@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useAuth } from '@/hooks/useAuth';
 import { StorageService } from '@/services/storage.service';
 import { GeminiService } from '@/services/gemini.service';
 import { FirestoreService } from '@/services/firestore.service';
@@ -11,6 +12,7 @@ interface FileUploadProgress {
 }
 
 export default function CrearPreparacionForm() {
+  const { user } = useAuth();
   const [formData, setFormData] = useState<FormData>({
     titulo: '',
     descripcion: '',
@@ -108,7 +110,7 @@ export default function CrearPreparacionForm() {
         archivosUrls: uploadedUrls,
         createdAt: new Date(),
         updatedAt: new Date(),
-        userId: 'temp-user-id',
+        userId: user!.uid,
         prediccion,
         ejerciciosLatex: latex,
       };
