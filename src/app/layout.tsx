@@ -17,7 +17,7 @@ const geistMono = localFont({
 });
 
 export const metadata: Metadata = {
-  title: "PrepárateUC - Predicción de Exámenes con IA",
+  title: "PreparateUC",
   description: "Usa IA para predecir qué entrará en tu próximo examen. Sube tus materiales y recibe predicciones inteligentes.",
 };
 

@@ -1,8 +1,8 @@
 import SignUpForm from '@/components/auth/SignUpForm';
 
 export const metadata = {
-  title: 'Registrarse - PrepárateUC',
-  description: 'Crea tu cuenta en PrepárateUC',
+  title: 'PreparateUC',
+  description: 'Crea tu cuenta en PreparateUC',
 };
 
 export default function SignUpPage() {

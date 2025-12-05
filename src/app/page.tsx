@@ -6,7 +6,7 @@ export default function Home() {
       <main className="flex flex-col items-center justify-center min-h-screen p-8">
         <div className="text-center space-y-8 max-w-4xl">
           <h1 className="text-6xl font-bold bg-gradient-to-r from-blue-500 to-purple-500 bg-clip-text text-transparent">
-            PrepárateUC
+            PreparateUC
           </h1>
           <p className="text-2xl text-zinc-100">
             Inteligencia Artificial para predecir qué entrará en tu próximo examen

@@ -1,7 +1,7 @@
 import SignInForm from '@/components/auth/SignInForm';
 
 export const metadata = {
-  title: 'Iniciar Sesión - PrepárateUC',
+  title: 'PreparateUC',
   description: 'Accede a tu cuenta de PrepárateUC',
 };
 
