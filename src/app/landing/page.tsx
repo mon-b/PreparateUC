@@ -77,50 +77,58 @@ interface PrepCardData {
 }
 
 const PrepCard = ({ data }: { data: PrepCardData }) => (
-  <div className="group relative break-inside-avoid mb-6 cursor-pointer">
-    <div className="relative overflow-hidden rounded-2xl bg-zinc-900 border border-zinc-800 transition-transform duration-300 group-hover:-translate-y-1">
-      {/* Header con gradiente */}
-      <div className={`h-48 w-full bg-gradient-to-br ${data.color} p-4 flex flex-col justify-between`}>
-        <div className="flex justify-between items-start opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-           <span className="bg-black/40 backdrop-blur-md px-2 py-1 rounded text-xs text-white border border-white/10">
-             {data.course}
-           </span>
-           <button className="bg-black/40 backdrop-blur-md p-1.5 rounded-full hover:bg-white/20 transition-colors text-white">
-             <MoreHorizontal size={16} />
-           </button>
-        </div>
-      </div>
-      {/* Contenido */}
-      <div className="p-4">
-        <h3 className="text-zinc-100 font-semibold text-lg leading-tight mb-1 group-hover:text-blue-400 transition-colors">
-          {data.title}
-        </h3>
-        <div className="flex items-center gap-2 text-xs text-zinc-400 mb-3">
-          <User size={12} />
-          <span>{data.author}</span>
-          <span>•</span>
-          <span>{data.date}</span>
-        </div>
-        <div className="flex flex-wrap gap-2 mb-4">
-          {data.tags.map(tag => (
-            <span key={tag} className="px-2 py-0.5 rounded-full bg-zinc-800 text-zinc-400 text-[10px] border border-zinc-700">
-              {tag}
-            </span>
-          ))}
-        </div>
-        <div className="flex items-center justify-between border-t border-zinc-800 pt-3 mt-2">
-          <div className="flex items-center gap-1.5 text-zinc-400 hover:text-pink-500 transition-colors">
-            <Heart size={16} />
-            <span className="text-xs font-medium">{data.likes}</span>
+  <Link href={`/preparaciones/${data.id}`}>
+    <div className="group relative break-inside-avoid mb-6 cursor-pointer">
+      <div className="relative overflow-hidden rounded-2xl bg-zinc-900 border border-zinc-800 transition-transform duration-300 group-hover:-translate-y-1">
+        {/* Header con gradiente */}
+        <div className={`h-48 w-full bg-gradient-to-br ${data.color} p-4 flex flex-col justify-between`}>
+          <div className="flex justify-between items-start opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+             <span className="bg-black/40 backdrop-blur-md px-2 py-1 rounded text-xs text-white border border-white/10">
+               {data.course}
+             </span>
+             <button
+               onClick={(e) => {
+                 e.preventDefault();
+                 // Add options menu here
+               }}
+               className="bg-black/40 backdrop-blur-md p-1.5 rounded-full hover:bg-white/20 transition-colors text-white"
+             >
+               <MoreHorizontal size={16} />
+             </button>
           </div>
-          <div className="flex items-center gap-1.5 text-zinc-400 hover:text-blue-400 transition-colors">
-            <BookOpen size={16} />
-            <span className="text-xs">Ver plan</span>
+        </div>
+        {/* Contenido */}
+        <div className="p-4">
+          <h3 className="text-zinc-100 font-semibold text-lg leading-tight mb-1 group-hover:text-blue-400 transition-colors">
+            {data.title}
+          </h3>
+          <div className="flex items-center gap-2 text-xs text-zinc-400 mb-3">
+            <User size={12} />
+            <span>{data.author}</span>
+            <span>•</span>
+            <span>{data.date}</span>
+          </div>
+          <div className="flex flex-wrap gap-2 mb-4">
+            {data.tags.map(tag => (
+              <span key={tag} className="px-2 py-0.5 rounded-full bg-zinc-800 text-zinc-400 text-[10px] border border-zinc-700">
+                {tag}
+              </span>
+            ))}
+          </div>
+          <div className="flex items-center justify-between border-t border-zinc-800 pt-3 mt-2">
+            <div className="flex items-center gap-1.5 text-zinc-400 hover:text-pink-500 transition-colors">
+              <Heart size={16} />
+              <span className="text-xs font-medium">{data.likes}</span>
+            </div>
+            <div className="flex items-center gap-1.5 text-zinc-400 hover:text-blue-400 transition-colors">
+              <BookOpen size={16} />
+              <span className="text-xs">Ver plan</span>
+            </div>
           </div>
         </div>
       </div>
     </div>
-  </div>
+  </Link>
 );
 
 export default function SoraLanding() {

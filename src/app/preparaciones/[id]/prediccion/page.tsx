@@ -1,11 +1,12 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Brain, Loader2, Sparkles, TrendingUp, FileText, ChevronRight, ExternalLink } from 'lucide-react';
+import { Brain, Loader2, Sparkles, TrendingUp, FileText, ChevronRight, ExternalLink, Lock } from 'lucide-react';
 import { FirestoreService } from '@/services/firestore.service';
 import { StorageService } from '@/services/storage.service';
 import { Preparacion, Ejercicio } from '@/types/preparacion';
 import Link from 'next/link';
+import { useAuth } from '@/hooks/useAuth';
 
 export default function PredictionPage({
   params,
@@ -18,6 +19,7 @@ export default function PredictionPage({
   const [currentStep, setCurrentStep] = useState<string>('');
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const { user } = useAuth();
 
   useEffect(() => {
     fetchPreparacion();
@@ -36,6 +38,21 @@ export default function PredictionPage({
 
   const handleGenerarMaterial = async (temaNombre: string) => {
     if (!preparacion) return;
+
+    // Check ownership
+    if (!user || preparacion.userId !== user.uid) {
+      setError('No tienes permiso para generar materiales en esta preparación');
+      return;
+    }
+
+    // Check if already generated
+    const yaGenerado = preparacion.materialesGenerados?.some(
+      (m) => m.temaNombre === temaNombre
+    );
+    if (yaGenerado) {
+      setError('Este material ya ha sido generado');
+      return;
+    }
 
     setGeneratingTema(temaNombre);
     setError(null);
@@ -83,19 +100,29 @@ export default function PredictionPage({
 
       const { data: latexCode } = await responseLatex.json();
 
-      // Paso 3: Compilar LaTeX a PDF
-      setCurrentStep('Compilando LaTeX a PDF...');
-      const pdfBlob = await compilarLatexAPDF(latexCode);
+      // Paso 3: Compilar LaTeX a PDF (SKIP for now - can be done later)
+      setCurrentStep('Preparando para guardar...');
+      let pdfUrl = '';
 
-      // Paso 4: Subir PDF a Firebase Storage
-      setCurrentStep('Subiendo PDF a Firebase Storage...');
-      const pdfFile = new File([pdfBlob], `${temaNombre}_${Date.now()}.pdf`, {
-        type: 'application/pdf',
-      });
-      const pdfUrl = await StorageService.uploadFile(
-        pdfFile,
-        `preparaciones/${params.id}/materiales`
-      );
+      // Try to compile LaTeX, but don't fail if it doesn't work
+      try {
+        setCurrentStep('Compilando LaTeX a PDF...');
+        const pdfBlob = await compilarLatexAPDF(latexCode);
+
+        // Paso 4: Subir PDF a Firebase Storage
+        setCurrentStep('Subiendo PDF a Firebase Storage...');
+        const pdfFile = new File([pdfBlob], `${temaNombre}_${Date.now()}.pdf`, {
+          type: 'application/pdf',
+        });
+        pdfUrl = await StorageService.uploadFile(
+          pdfFile,
+          `preparaciones/${params.id}/materiales`
+        );
+        console.log('PDF compiled and uploaded successfully:', pdfUrl);
+      } catch (pdfError) {
+        console.error('Error compilando/subiendo PDF (continuando sin PDF):', pdfError);
+        // Continue without PDF - we still have the LaTeX code
+      }
 
       // Paso 5: Actualizar Firestore
       setCurrentStep('Guardando material generado...');
@@ -109,19 +136,27 @@ export default function PredictionPage({
       };
 
       console.log('=== DEBUG Guardando Material ===');
+      console.log('Preparation ID:', params.id);
       console.log('Nuevo material a guardar:', nuevoMaterial);
+      console.log('Ejercicios count:', ejerciciosData.ejercicios?.length);
 
       const materialesActuales = preparacion.materialesGenerados || [];
       console.log('Materiales actuales antes de guardar:', materialesActuales);
+      console.log('Materiales actuales length:', materialesActuales.length);
 
       const materialesActualizados = [...materialesActuales, nuevoMaterial];
       console.log('Materiales actualizados a guardar:', materialesActualizados);
+      console.log('Materiales actualizados length:', materialesActualizados.length);
 
-      await FirestoreService.actualizarPreparacion(params.id, {
-        materialesGenerados: materialesActualizados,
-      });
-
-      console.log('Material guardado exitosamente en Firestore');
+      try {
+        await FirestoreService.actualizarPreparacion(params.id, {
+          materialesGenerados: materialesActualizados,
+        });
+        console.log('✅ Material guardado exitosamente en Firestore');
+      } catch (firestoreError) {
+        console.error('❌ ERROR guardando en Firestore:', firestoreError);
+        throw firestoreError;
+      }
 
       setCurrentStep('¡Material generado exitosamente!');
       await fetchPreparacion();
@@ -197,19 +232,32 @@ export default function PredictionPage({
 
   const prediccion = preparacion.prediccion;
   const temas = prediccion?.temas || [];
+  const isOwner = user && preparacion.userId === user.uid;
 
   return (
     <div>
       <div className="mb-8">
-        <div className="flex items-center gap-3 mb-3">
-          <Brain className="w-8 h-8 text-blue-400" />
-          <h1 className="text-3xl font-bold text-white">
-            Predicción IA
-          </h1>
+        <div className="flex items-center justify-between">
+          <div>
+            <div className="flex items-center gap-3 mb-3">
+              <Brain className="w-8 h-8 text-blue-400" />
+              <h1 className="text-3xl font-bold text-white">
+                Predicción IA
+              </h1>
+              {!isOwner && (
+                <div className="flex items-center gap-2 px-3 py-1 bg-zinc-800 border border-zinc-700 rounded-lg">
+                  <Lock className="w-4 h-4 text-zinc-500" />
+                  <span className="text-sm text-zinc-500">Solo lectura</span>
+                </div>
+              )}
+            </div>
+            <p className="text-zinc-400">
+              {isOwner
+                ? 'Análisis predictivo de contenido basado en tus materiales del curso'
+                : 'Análisis predictivo de contenido (solo el propietario puede generar materiales)'}
+            </p>
+          </div>
         </div>
-        <p className="text-zinc-400">
-          Análisis predictivo de contenido basado en tus materiales del curso
-        </p>
       </div>
 
       {error && (
@@ -363,7 +411,7 @@ export default function PredictionPage({
                           <span className="text-sm">Ver Documento</span>
                         </Link>
                       </div>
-                    ) : (
+                    ) : isOwner ? (
                       <button
                         onClick={() => handleGenerarMaterial(tema.nombre)}
                         disabled={generatingTema !== null}
@@ -381,6 +429,11 @@ export default function PredictionPage({
                           </>
                         )}
                       </button>
+                    ) : (
+                      <div className="flex items-center gap-2 text-zinc-500">
+                        <Lock className="w-4 h-4" />
+                        <span className="text-sm">Solo el propietario puede generar</span>
+                      </div>
                     )}
                   </div>
 

@@ -1,10 +1,12 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { MessageSquare, Send, Loader2, User } from 'lucide-react';
+import { MessageSquare, Send, Loader2, User, Wifi, WifiOff } from 'lucide-react';
 import { FirestoreService } from '@/services/firestore.service';
 import { Preparacion, ForumPost } from '@/types/preparacion';
 import { useAuth } from '@/hooks/useAuth';
+import { doc, onSnapshot } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
 
 export default function ForoPage({
   params,
@@ -15,22 +17,62 @@ export default function ForoPage({
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [nuevoPost, setNuevoPost] = useState('');
+  const [isConnected, setIsConnected] = useState(true);
   const { user } = useAuth();
 
   useEffect(() => {
-    fetchPreparacion();
-  }, [params.id]);
+    // Set up real-time listener
+    const docRef = doc(db, 'preparaciones', params.id);
 
-  const fetchPreparacion = async () => {
-    try {
-      const data = await FirestoreService.obtenerPreparacion(params.id);
-      setPreparacion(data);
-    } catch (error) {
-      console.error('Error al obtener preparación:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+    const unsubscribe = onSnapshot(
+      docRef,
+      (docSnap) => {
+        if (docSnap.exists()) {
+          const data = docSnap.data();
+
+          // Convert forumPosts dates
+          const forumPosts = data.forumPosts?.map((post: any) => ({
+            ...post,
+            createdAt: post.createdAt?.toDate ? post.createdAt.toDate() : post.createdAt,
+            updatedAt: post.updatedAt?.toDate ? post.updatedAt.toDate() : post.updatedAt,
+          })) || [];
+
+          // Convert materialesGenerados dates
+          const materialesGenerados = data.materialesGenerados?.map((material: any) => ({
+            ...material,
+            createdAt: material.createdAt?.toDate ? material.createdAt.toDate() : material.createdAt,
+          })) || [];
+
+          // Convert documentosExtra dates
+          const documentosExtra = data.documentosExtra?.map((doc: any) => ({
+            ...doc,
+            uploadedAt: doc.uploadedAt?.toDate ? doc.uploadedAt.toDate() : doc.uploadedAt,
+          })) || [];
+
+          setPreparacion({
+            id: docSnap.id,
+            ...data,
+            fechaExamen: data.fechaExamen.toDate(),
+            createdAt: data.createdAt.toDate(),
+            updatedAt: data.updatedAt.toDate(),
+            forumPosts,
+            materialesGenerados,
+            documentosExtra,
+          } as Preparacion);
+
+          setIsConnected(true);
+          setLoading(false);
+        }
+      },
+      (error) => {
+        console.error('Error en listener real-time:', error);
+        setIsConnected(false);
+      }
+    );
+
+    // Cleanup listener on unmount
+    return () => unsubscribe();
+  }, [params.id]);
 
   const handleSubmitPost = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -53,10 +95,10 @@ export default function ForoPage({
       });
 
       setNuevoPost('');
-      await fetchPreparacion();
+      // No need to fetch - real-time listener will update automatically
     } catch (error) {
       console.error('Error al crear post:', error);
-      alert('Error al publicar. Inténtalo de nuevo.');
+      // Don't show alert, just log the error - the real-time listener will update if it actually worked
     } finally {
       setSubmitting(false);
     }
@@ -86,20 +128,41 @@ export default function ForoPage({
   return (
     <div>
       <div className="mb-8">
-        <div className="flex items-center gap-3 mb-3">
-          <MessageSquare className="w-8 h-8 text-blue-400" />
-          <h1 className="text-3xl font-bold text-white">
-            Foro de Discusión
-          </h1>
+        <div className="flex items-center justify-between">
+          <div>
+            <div className="flex items-center gap-3 mb-3">
+              <MessageSquare className="w-8 h-8 text-blue-400" />
+              <h1 className="text-3xl font-bold text-white">
+                Foro de Discusión
+              </h1>
+            </div>
+            <p className="text-zinc-400">
+              Comparte ideas, preguntas y discute con otros sobre esta preparación
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            {isConnected ? (
+              <>
+                <Wifi className="w-5 h-5 text-green-400" />
+                <span className="text-sm text-green-400">En vivo</span>
+              </>
+            ) : (
+              <>
+                <WifiOff className="w-5 h-5 text-red-400" />
+                <span className="text-sm text-red-400">Desconectado</span>
+              </>
+            )}
+          </div>
         </div>
-        <p className="text-zinc-400">
-          Comparte ideas, preguntas y discute con otros sobre esta preparación
-        </p>
       </div>
 
       {/* New Post Form */}
       {user ? (
         <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-6 mb-6">
+          <div className="flex items-center gap-2 mb-4 text-sm text-zinc-500">
+            <MessageSquare className="w-4 h-4" />
+            <span>Participando como {user.displayName || user.email}</span>
+          </div>
           <form onSubmit={handleSubmitPost}>
             <div className="flex items-start gap-4">
               <div className="flex-shrink-0 w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-white font-semibold">

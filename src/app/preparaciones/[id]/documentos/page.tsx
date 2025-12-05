@@ -1,9 +1,10 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { FileText, Download, Calendar, Loader2 } from 'lucide-react';
-import { FirestoreService } from '@/services/firestore.service';
+import { FileText, Download, Calendar, Loader2, Wifi, WifiOff } from 'lucide-react';
 import { Preparacion } from '@/types/preparacion';
+import { doc, onSnapshot } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
 
 export default function DocumentosGeneradosPage({
   params,
@@ -12,25 +13,60 @@ export default function DocumentosGeneradosPage({
 }) {
   const [preparacion, setPreparacion] = useState<Preparacion | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isConnected, setIsConnected] = useState(true);
 
   useEffect(() => {
-    const fetchPreparacion = async () => {
-      try {
-        const data = await FirestoreService.obtenerPreparacion(params.id);
-        setPreparacion(data);
-      } catch (error) {
-        console.error('Error al obtener preparación:', error);
-      } finally {
-        setLoading(false);
+    // Set up real-time listener
+    const docRef = doc(db, 'preparaciones', params.id);
+
+    const unsubscribe = onSnapshot(
+      docRef,
+      (docSnap) => {
+        if (docSnap.exists()) {
+          const data = docSnap.data();
+
+          // Convert materialesGenerados dates
+          const materialesGenerados = data.materialesGenerados?.map((material: any) => ({
+            ...material,
+            createdAt: material.createdAt?.toDate ? material.createdAt.toDate() : material.createdAt,
+          })) || [];
+
+          // Convert forumPosts dates
+          const forumPosts = data.forumPosts?.map((post: any) => ({
+            ...post,
+            createdAt: post.createdAt?.toDate ? post.createdAt.toDate() : post.createdAt,
+            updatedAt: post.updatedAt?.toDate ? post.updatedAt.toDate() : post.updatedAt,
+          })) || [];
+
+          // Convert documentosExtra dates
+          const documentosExtra = data.documentosExtra?.map((doc: any) => ({
+            ...doc,
+            uploadedAt: doc.uploadedAt?.toDate ? doc.uploadedAt.toDate() : doc.uploadedAt,
+          })) || [];
+
+          setPreparacion({
+            id: docSnap.id,
+            ...data,
+            fechaExamen: data.fechaExamen.toDate(),
+            createdAt: data.createdAt.toDate(),
+            updatedAt: data.updatedAt.toDate(),
+            materialesGenerados,
+            forumPosts,
+            documentosExtra,
+          } as Preparacion);
+
+          setIsConnected(true);
+          setLoading(false);
+        }
+      },
+      (error) => {
+        console.error('Error en listener real-time:', error);
+        setIsConnected(false);
       }
-    };
+    );
 
-    fetchPreparacion();
-
-    // Auto-refresh every 5 seconds to catch newly generated materials
-    const intervalId = setInterval(fetchPreparacion, 5000);
-
-    return () => clearInterval(intervalId);
+    // Cleanup listener on unmount
+    return () => unsubscribe();
   }, [params.id]);
 
   if (loading) {
@@ -64,15 +100,32 @@ export default function DocumentosGeneradosPage({
   return (
     <div>
       <div className="mb-8">
-        <div className="flex items-center gap-3 mb-3">
-          <FileText className="w-8 h-8 text-blue-400" />
-          <h1 className="text-3xl font-bold text-white">
-            Documentos Generados
-          </h1>
+        <div className="flex items-center justify-between">
+          <div>
+            <div className="flex items-center gap-3 mb-3">
+              <FileText className="w-8 h-8 text-blue-400" />
+              <h1 className="text-3xl font-bold text-white">
+                Documentos Generados
+              </h1>
+            </div>
+            <p className="text-zinc-400">
+              Documentos de ejercicios y materiales generados por IA ({materialesGenerados.length} {materialesGenerados.length === 1 ? 'documento' : 'documentos'})
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            {isConnected ? (
+              <>
+                <Wifi className="w-5 h-5 text-green-400" />
+                <span className="text-sm text-green-400">En vivo</span>
+              </>
+            ) : (
+              <>
+                <WifiOff className="w-5 h-5 text-red-400" />
+                <span className="text-sm text-red-400">Desconectado</span>
+              </>
+            )}
+          </div>
         </div>
-        <p className="text-zinc-400">
-          Documentos de ejercicios y materiales generados por IA ({materialesGenerados.length} {materialesGenerados.length === 1 ? 'documento' : 'documentos'})
-        </p>
       </div>
 
       {sortedMateriales.length === 0 ? (
