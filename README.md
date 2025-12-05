@@ -366,9 +366,8 @@ El proyecto incluye prompts cuidadosamente diseñados para:
 
 ## 👥 Créditos
 
-Desarrollado durante el **Hackathon del Grupo Open Source UC** por:
-- [Tu nombre]
-- [Colaboradores]
+Desarrollado durante la **Hackscate** de **Open Source UC** por:
+- @mon-b, @EstebanKiito, @estardacs
 
 **Tecnologías Clave**:
 - Next.js & React
@@ -376,9 +375,6 @@ Desarrollado durante el **Hackathon del Grupo Open Source UC** por:
 - Google Gemini AI
 - Tailwind CSS
 
-## 📄 Licencia
-
-[Especifica tu licencia aquí - MIT, Apache, etc.]
 
 ---
 
