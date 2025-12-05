@@ -8,7 +8,11 @@ import {
   Heart,
   PlusCircle,
   ArrowLeft,
-  Settings
+  Settings,
+  Brain,
+  FileText,
+  Upload,
+  MessageSquare
 } from 'lucide-react';
 import React from 'react';
 import { useAuth } from '@/hooks/useAuth';
@@ -42,39 +46,90 @@ export default function Sidebar() {
   const avatarText = user?.displayName?.charAt(0).toUpperCase() || user?.email?.charAt(0).toUpperCase() || 'U';
   const displayName = user?.displayName || user?.email || 'Usuario';
 
+  // Detectar si estamos en una página de preparación específica
+  const preparacionMatch = pathname.match(/^\/preparaciones\/([^\/]+)/);
+  const preparacionId = preparacionMatch ? preparacionMatch[1] : null;
+
   return (
     <aside className="w-64 fixed inset-y-0 left-0 border-r border-zinc-800 bg-black z-50 flex flex-col p-4 hidden md:flex">
       <div className="mb-8 px-4">
         <Logo />
       </div>
-      <div className="space-y-1 flex-1">
-        <div className="px-4 mb-2 text-xs font-semibold text-zinc-500 uppercase tracking-wider">
-          Menu
-        </div>
-        <SidebarItem 
-          icon={Compass} 
-          label="Explorar" 
-          href="/landing"
-          active={pathname === '/landing'}
-        />
-        <SidebarItem 
-          icon={Library} 
-          label="Mis Preparaciones" 
-          href="/mis-preparaciones"
-          active={pathname === '/mis-preparaciones'}
-        />
-        <SidebarItem 
-          icon={Heart} 
-          label="Likes" 
-          href="#"
-          active={pathname === '/likes'}
-        />
-        <SidebarItem
-            icon={Settings}
-            label="Configuración"
-            href="/profile"
-            active={pathname === '/profile'}
-        />
+      <div className="space-y-1 flex-1 overflow-y-auto">
+        {/* Menú principal */}
+        {!preparacionId && (
+          <>
+            <div className="px-4 mb-2 text-xs font-semibold text-zinc-500 uppercase tracking-wider">
+              Menu
+            </div>
+            <SidebarItem
+              icon={Compass}
+              label="Explorar"
+              href="/landing"
+              active={pathname === '/landing'}
+            />
+            <SidebarItem
+              icon={Library}
+              label="Mis Preparaciones"
+              href="/mis-preparaciones"
+              active={pathname === '/mis-preparaciones'}
+            />
+            <SidebarItem
+              icon={Heart}
+              label="Likes"
+              href="#"
+              active={pathname === '/likes'}
+            />
+            <SidebarItem
+                icon={Settings}
+                label="Configuración"
+                href="/profile"
+                active={pathname === '/profile'}
+            />
+          </>
+        )}
+
+        {/* Secciones de preparación cuando estamos viendo una */}
+        {preparacionId && (
+          <>
+            <div className="px-4 mb-4">
+              <Link
+                href="/mis-preparaciones"
+                className="flex items-center gap-2 text-zinc-400 hover:text-zinc-200 transition-colors text-sm"
+              >
+                <ArrowLeft size={16} />
+                <span>Volver a Mis Preparaciones</span>
+              </Link>
+            </div>
+            <div className="px-4 mb-2 text-xs font-semibold text-zinc-500 uppercase tracking-wider">
+              Preparación
+            </div>
+            <SidebarItem
+              icon={Brain}
+              label="Predicción"
+              href={`/preparaciones/${preparacionId}/prediccion`}
+              active={pathname.includes('/prediccion')}
+            />
+            <SidebarItem
+              icon={FileText}
+              label="Documentos Generados"
+              href={`/preparaciones/${preparacionId}/documentos`}
+              active={pathname.includes('/documentos')}
+            />
+            <SidebarItem
+              icon={Upload}
+              label="Documentos Extra"
+              href={`/preparaciones/${preparacionId}/extras`}
+              active={pathname.includes('/extras')}
+            />
+            <SidebarItem
+              icon={MessageSquare}
+              label="Foro"
+              href={`/preparaciones/${preparacionId}/foro`}
+              active={pathname.includes('/foro')}
+            />
+          </>
+        )}
       </div>
       <div className="space-y-3 pt-6 border-t border-zinc-800">
         <Link href="/crear-preparacion" className="w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white p-3 rounded-xl font-medium transition-all shadow-lg shadow-blue-900/20 group">

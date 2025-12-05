@@ -49,6 +49,39 @@ export class FirestoreService {
         updateData.fechaExamen = Timestamp.fromDate(updates.fechaExamen);
       }
 
+      // Convert materialesGenerados dates to Timestamps
+      if (updates.materialesGenerados) {
+        updateData.materialesGenerados = updates.materialesGenerados.map((material: any) => ({
+          ...material,
+          createdAt: material.createdAt instanceof Date
+            ? Timestamp.fromDate(material.createdAt)
+            : material.createdAt,
+        }));
+      }
+
+      // Convert documentosExtra dates to Timestamps
+      if (updates.documentosExtra) {
+        updateData.documentosExtra = updates.documentosExtra.map((doc: any) => ({
+          ...doc,
+          uploadedAt: doc.uploadedAt instanceof Date
+            ? Timestamp.fromDate(doc.uploadedAt)
+            : doc.uploadedAt,
+        }));
+      }
+
+      // Convert forumPosts dates to Timestamps
+      if (updates.forumPosts) {
+        updateData.forumPosts = updates.forumPosts.map((post: any) => ({
+          ...post,
+          createdAt: post.createdAt instanceof Date
+            ? Timestamp.fromDate(post.createdAt)
+            : post.createdAt,
+          updatedAt: post.updatedAt instanceof Date
+            ? Timestamp.fromDate(post.updatedAt)
+            : post.updatedAt,
+        }));
+      }
+
       updateData.updatedAt = Timestamp.now();
 
       await updateDoc(docRef, updateData);
@@ -65,12 +98,35 @@ export class FirestoreService {
 
       if (docSnap.exists()) {
         const data = docSnap.data();
+
+        // Convert materialesGenerados dates
+        const materialesGenerados = data.materialesGenerados?.map((material: any) => ({
+          ...material,
+          createdAt: material.createdAt?.toDate ? material.createdAt.toDate() : material.createdAt,
+        })) || [];
+
+        // Convert documentosExtra dates
+        const documentosExtra = data.documentosExtra?.map((doc: any) => ({
+          ...doc,
+          uploadedAt: doc.uploadedAt?.toDate ? doc.uploadedAt.toDate() : doc.uploadedAt,
+        })) || [];
+
+        // Convert forumPosts dates
+        const forumPosts = data.forumPosts?.map((post: any) => ({
+          ...post,
+          createdAt: post.createdAt?.toDate ? post.createdAt.toDate() : post.createdAt,
+          updatedAt: post.updatedAt?.toDate ? post.updatedAt.toDate() : post.updatedAt,
+        })) || [];
+
         return {
           id: docSnap.id,
           ...data,
           fechaExamen: data.fechaExamen.toDate(),
           createdAt: data.createdAt.toDate(),
           updatedAt: data.updatedAt.toDate(),
+          materialesGenerados,
+          documentosExtra,
+          forumPosts,
         } as Preparacion;
       }
 

@@ -7,6 +7,8 @@ import { GeminiService } from '@/services/gemini.service';
 import { FirestoreService } from '@/services/firestore.service';
 import { FormData, GeminiPredictionRequest, PrediccionResponse } from '@/types/preparacion';
 import TablaPrediccion from './TablaPrediccion';
+import { useRouter } from 'next/navigation';
+
 
 interface FileUploadProgress {
   [key: number]: number;
@@ -14,6 +16,8 @@ interface FileUploadProgress {
 
 export default function CrearPreparacionForm() {
   const { user } = useAuth();
+  const router = useRouter();
+
   const [formData, setFormData] = useState<FormData>({
     titulo: '',
     descripcion: '',
@@ -113,6 +117,8 @@ export default function CrearPreparacionForm() {
       };
 
       const docId = await FirestoreService.crearPreparacion(preparacionData);
+        router.push(`/preparaciones/${docId}`);
+      return;
       setPreparacionId(docId);
 
       setCurrentStep('¡Predicción generada exitosamente!');
