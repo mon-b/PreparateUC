@@ -16,18 +16,29 @@ export default function Home() {
             y generará predicciones de probabilidad por tema, junto con ejercicios ordenados por dificultad.
           </p>
 
-          <div className="flex gap-6 justify-center mt-12">
+          <div className="flex flex-col items-center gap-4 mt-12">
+            {/* Botones Principales */}
+            <div className="flex gap-6 justify-center">
+              <Link
+                href="/crear-preparacion"
+                className="px-8 py-4 bg-blue-600 text-white rounded-lg text-lg font-semibold hover:bg-blue-700 transition-colors shadow-lg hover:shadow-xl"
+              >
+                Crear Preparación
+              </Link>
+              <Link
+                href="/mis-preparaciones"
+                className="px-8 py-4 bg-white text-blue-600 border-2 border-blue-600 rounded-lg text-lg font-semibold hover:bg-blue-50 transition-colors"
+              >
+                Mis Preparaciones
+              </Link>
+            </div>
+
+            {/* --- NUEVO BOTÓN PARA IR A LA VISTA SORA --- */}
             <Link
-              href="/crear-preparacion"
-              className="px-8 py-4 bg-blue-600 text-white rounded-lg text-lg font-semibold hover:bg-blue-700 transition-colors shadow-lg hover:shadow-xl"
+              href="/landing"
+              className="mt-6 px-6 py-2 rounded-full border border-purple-200 bg-purple-50 text-purple-700 text-sm font-medium hover:bg-purple-100 transition-colors flex items-center gap-2"
             >
-              Crear Preparación
-            </Link>
-            <Link
-              href="/mis-preparaciones"
-              className="px-8 py-4 bg-white text-blue-600 border-2 border-blue-600 rounded-lg text-lg font-semibold hover:bg-blue-50 transition-colors"
-            >
-              Mis Preparaciones
+              ✨ Ver Demo Interfaz Sora (Modo Oscuro) →
             </Link>
           </div>
 
