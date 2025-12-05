@@ -119,6 +119,7 @@ export default function CrearPreparacionForm() {
         userId: user.uid,
         prediccion: prediccionResult,
         materialesGenerados: [],
+        likes: [],
       };
 
       const docId = await FirestoreService.crearPreparacion(preparacionData);
