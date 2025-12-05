@@ -34,7 +34,7 @@ export default function Home() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-16 text-left">
             <div className="bg-white p-6 rounded-xl shadow-md">
               <div className="text-4xl mb-4">📚</div>
-              <h3 className="text-xl font-semibold mb-2">Sube tus Materiales</h3>
+              <h3 className="text-xl text-gray-700 font-semibold mb-2">Sube tus Materiales</h3>
               <p className="text-gray-600">
                 Temarios, pruebas pasadas, apuntes y todo lo que el profesor haya mencionado.
               </p>
@@ -42,7 +42,7 @@ export default function Home() {
 
             <div className="bg-white p-6 rounded-xl shadow-md">
               <div className="text-4xl mb-4">🤖</div>
-              <h3 className="text-xl font-semibold mb-2">IA Analiza</h3>
+              <h3 className="text-xl font-semibold text-gray-700 mb-2">IA Analiza</h3>
               <p className="text-gray-600">
                 Gemini AI procesa todo y genera predicciones de probabilidad por categoría y tema.
               </p>
@@ -50,7 +50,7 @@ export default function Home() {
 
             <div className="bg-white p-6 rounded-xl shadow-md">
               <div className="text-4xl mb-4">📝</div>
-              <h3 className="text-xl font-semibold mb-2">Ejercicios Compilados</h3>
+              <h3 className="text-xl font-semibold text-gray-700 mb-2">Ejercicios Compilados</h3>
               <p className="text-gray-600">
                 Recibe un documento LaTeX con ejercicios ordenados por dificultad para practicar.
               </p>
