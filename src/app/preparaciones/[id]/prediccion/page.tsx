@@ -3,6 +3,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { Brain, Loader2, Sparkles, TrendingUp, FileText, ChevronRight, ExternalLink, Lock } from 'lucide-react';
 import { FirestoreService } from '@/services/firestore.service';
+import { UserSettingsService } from '@/services/userSettings.service';
 import { Preparacion, Ejercicio } from '@/types/preparacion';
 import Link from 'next/link';
 import { useAuth } from '@/hooks/useAuth';
@@ -89,7 +90,10 @@ export default function PredictionPage({
         ];
       }
 
-      // Paso 2: Generar LaTeX con los ejercicios extraídos
+      // Paso 2: Fetch user settings for API key and model
+      const userSettings = await UserSettingsService.getUserSettings(user.uid);
+
+      // Paso 3: Generar LaTeX con los ejercicios extraídos
       setCurrentStep('Generando documento LaTeX...');
       const responseLatex = await fetch('/api/gemini', {
         method: 'POST',
@@ -101,6 +105,8 @@ export default function PredictionPage({
             tema: temaNombre,
             asignatura: preparacion.asignatura,
           },
+          userApiKey: userSettings?.geminiApiKey,
+          userModel: userSettings?.geminiModel,
         }),
       });
 

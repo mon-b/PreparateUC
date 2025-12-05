@@ -98,7 +98,7 @@ export default function Sidebar() {
                 className="flex items-center gap-2 text-zinc-400 hover:text-zinc-200 transition-colors text-sm"
               >
                 <ArrowLeft size={16} />
-                <span>Volver a Mis Preparaciones</span>
+                <span>Volver</span>
               </Link>
             </div>
             <div className="px-4 mb-2 text-xs font-semibold text-zinc-500 uppercase tracking-wider">

@@ -77,3 +77,11 @@ export interface FormData {
   contextoProfesor: string;
   archivos: File[];
 }
+
+export interface UserSettings {
+  userId: string;
+  geminiApiKey?: string;
+  geminiModel?: string;
+  createdAt: Date;
+  updatedAt: Date;
+}

@@ -5,6 +5,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { StorageService } from '@/services/storage.service';
 import { GeminiService } from '@/services/gemini.service';
 import { FirestoreService } from '@/services/firestore.service';
+import { UserSettingsService } from '@/services/userSettings.service';
 import { FormData, GeminiPredictionRequest, PrediccionResponse } from '@/types/preparacion';
 import TablaPrediccion from './TablaPrediccion';
 import { useRouter } from 'next/navigation';
@@ -89,6 +90,10 @@ export default function CrearPreparacionForm() {
       );
 
       setCurrentStep('Analizando contenido con Gemini AI...');
+
+      // Fetch user settings for API key and model
+      const userSettings = await UserSettingsService.getUserSettings(user.uid);
+
       const geminiRequest: GeminiPredictionRequest = {
         contextoProfesor: formData.contextoProfesor,
         temarios: textosExtraidos,
@@ -96,7 +101,11 @@ export default function CrearPreparacionForm() {
         asignatura: formData.asignatura,
       };
 
-      const prediccionResult = await GeminiService.analizarYPredecir(geminiRequest);
+      const prediccionResult = await GeminiService.analizarYPredecir(
+        geminiRequest,
+        userSettings?.geminiApiKey,
+        userSettings?.geminiModel
+      );
       setPrediccion(prediccionResult);
 
       setCurrentStep('Guardando predicción en Firestore...');
