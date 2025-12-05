@@ -11,6 +11,26 @@ export interface Preparacion {
   userId: string;
   prediccion?: PrediccionResponse;
   materialesGenerados?: MaterialGenerado[];
+  documentosExtra?: DocumentoExtra[];
+  forumPosts?: ForumPost[];
+}
+
+export interface DocumentoExtra {
+  nombre: string;
+  url: string;
+  tipo: string;
+  size: number;
+  uploadedAt: Date;
+}
+
+export interface ForumPost {
+  id?: string;
+  userId: string;
+  userName: string;
+  userAvatar?: string;
+  contenido: string;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 export interface PrediccionResponse {
