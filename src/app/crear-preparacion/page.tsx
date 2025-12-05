@@ -6,7 +6,7 @@ import AuthGuard from '@/components/AuthGuard';
 export default function CrearPreparacionPage() {
   return (
     <AuthGuard>
-      <main className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
+      <main className="min-h-screen bg-black">
         <CrearPreparacionForm />
       </main>
     </AuthGuard>
