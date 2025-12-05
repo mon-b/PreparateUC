@@ -1,74 +1,53 @@
 "use client";
+import Logo from '@/components/Logo';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { 
-  Search, 
-  Compass, 
-  Heart, 
-  PlusCircle, 
-  Library, 
-  User, 
-  LogIn, 
+import {
+  Search,
+  Compass,
+  Heart,
+  PlusCircle,
+  Library,
+  User,
+  LogIn,
   MoreHorizontal,
   BookOpen,
   GraduationCap,
   ArrowLeft
 } from 'lucide-react';
+import { FirestoreService } from '@/services/firestore.service';
+import { Preparacion } from '@/types/preparacion';
 
-// --- DATOS MOCK (Ejemplos visuales) ---
-const MOCK_PREPARATIONS = [
-  {
-    id: 1,
-    title: "Cálculo I: Examen Final",
-    author: "Sofía M.",
-    course: "MAT1610",
-    likes: 342,
-    color: "from-blue-600 to-indigo-900",
-    tags: ["Integrales", "Derivadas"],
-    date: "Hace 2 días"
-  },
-  {
-    id: 2,
-    title: "Progra Avanzada: Tarea 2",
-    author: "Juan P.",
-    course: "IIC2233",
-    likes: 128,
-    color: "from-emerald-600 to-teal-900",
-    tags: ["OOP", "Python"],
-    date: "Hace 5 horas"
-  },
-  {
-    id: 3,
-    title: "Química General: Lab 3",
-    author: "Andrea R.",
-    course: "QIM100",
-    likes: 89,
-    color: "from-orange-600 to-red-900",
-    tags: ["Estequiometría"],
-    date: "Hace 1 sem"
-  },
-  {
-    id: 4,
-    title: "Ética: Resumen Solemne",
-    author: "Carlos D.",
-    course: "FIL188",
-    likes: 450,
-    color: "from-purple-600 to-pink-900",
-    tags: ["Aristóteles", "Kant"],
-    date: "Ayer"
-  },
-  {
-    id: 5,
-    title: "Física I: Guía Resuelta",
-    author: "Matias F.",
-    course: "FIS1513",
-    likes: 210,
-    color: "from-cyan-600 to-blue-900",
-    tags: ["Cinemática"],
-    date: "Hace 3 días"
-  },
-];
+// Helper function to get random color gradient
+const getRandomColor = () => {
+  const colors = [
+    "from-blue-600 to-indigo-900",
+    "from-emerald-600 to-teal-900",
+    "from-orange-600 to-red-900",
+    "from-purple-600 to-pink-900",
+    "from-cyan-600 to-blue-900",
+    "from-rose-600 to-red-900",
+    "from-violet-600 to-purple-900",
+    "from-amber-600 to-orange-900",
+  ];
+  return colors[Math.floor(Math.random() * colors.length)];
+};
+
+// Helper function to format date
+const getRelativeTime = (date: Date) => {
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffMins = Math.floor(diffMs / 60000);
+  const diffHours = Math.floor(diffMs / 3600000);
+  const diffDays = Math.floor(diffMs / 86400000);
+
+  if (diffMins < 60) return `Hace ${diffMins} min`;
+  if (diffHours < 24) return `Hace ${diffHours} horas`;
+  if (diffDays === 1) return 'Ayer';
+  if (diffDays < 7) return `Hace ${diffDays} días`;
+  return `Hace ${Math.floor(diffDays / 7)} sem`;
+};
 
 // Componente para items del Sidebar
 const SidebarItem = ({ icon: Icon, label, active = false, onClick }: any) => (
@@ -86,7 +65,18 @@ const SidebarItem = ({ icon: Icon, label, active = false, onClick }: any) => (
 );
 
 // Componente para las tarjetas
-const PrepCard = ({ data }: { data: typeof MOCK_PREPARATIONS[0] }) => (
+interface PrepCardData {
+  id: string;
+  title: string;
+  author: string;
+  course: string;
+  likes: number;
+  color: string;
+  tags: string[];
+  date: string;
+}
+
+const PrepCard = ({ data }: { data: PrepCardData }) => (
   <div className="group relative break-inside-avoid mb-6 cursor-pointer">
     <div className="relative overflow-hidden rounded-2xl bg-zinc-900 border border-zinc-800 transition-transform duration-300 group-hover:-translate-y-1">
       {/* Header con gradiente */}
@@ -135,6 +125,37 @@ const PrepCard = ({ data }: { data: typeof MOCK_PREPARATIONS[0] }) => (
 
 export default function SoraLanding() {
   const [activeTab, setActiveTab] = useState('explorar');
+  const [preparations, setPreparations] = useState<PrepCardData[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    loadPreparations();
+  }, []);
+
+  const loadPreparations = async () => {
+    try {
+      setLoading(true);
+      const preps = await FirestoreService.obtenerTodasPreparaciones();
+
+      // Map Firestore data to card format
+      const mappedPreps: PrepCardData[] = preps.map((prep) => ({
+        id: prep.id || '',
+        title: prep.titulo,
+        author: prep.userId.substring(0, 8) + '...', // Show partial user ID or could fetch user name
+        course: prep.asignatura,
+        likes: Math.floor(Math.random() * 500), // Random likes for now
+        color: getRandomColor(),
+        tags: (prep.prediccion?.temas || []).slice(0, 2).map(t => t.nombre),
+        date: getRelativeTime(prep.createdAt),
+      }));
+
+      setPreparations(mappedPreps);
+    } catch (error) {
+      console.error('Error loading preparations:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     // Forzamos bg-black para asegurar tema oscuro
@@ -142,13 +163,8 @@ export default function SoraLanding() {
       
       {/* SIDEBAR */}
       <aside className="w-64 fixed inset-y-0 left-0 border-r border-zinc-800 bg-black z-50 flex flex-col p-4 hidden md:flex">
-        <div className="mb-8 px-4 flex items-center gap-2">
-          <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white font-bold shadow-lg shadow-blue-900/50">
-            P
-          </div>
-          <h1 className="text-xl font-bold text-white tracking-tight">
-            Preparate<span className="text-blue-500">UC</span>
-          </h1>
+        <div className="mb-8 px-4">
+            <Logo />
         </div>
 
         <div className="space-y-1 flex-1">
@@ -211,26 +227,44 @@ export default function SoraLanding() {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {/* Tarjeta Promocional Grande */}
-            <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-600 p-6 flex flex-col justify-center items-center text-center col-span-1 sm:col-span-2 lg:col-span-2 min-h-[250px] border border-blue-500/30 shadow-2xl shadow-blue-900/20 group">
-                {/* Ruido de fondo simulado con CSS si la imagen falla */}
-                <div className="absolute inset-0 opacity-20 mix-blend-overlay bg-black"></div> 
-                <div className="relative z-10 max-w-md">
-                  <h3 className="text-2xl font-bold text-white mb-2">¿Tienes material de estudio?</h3>
-                  <p className="text-blue-100 mb-6 text-sm">Sube tus apuntes y ayuda a Gemini a crear mejores planificaciones.</p>
-                  <button className="bg-white text-blue-600 px-6 py-2.5 rounded-full font-bold hover:bg-blue-50 transition-colors shadow-lg flex items-center gap-2 mx-auto text-sm">
-                    <PlusCircle size={18} />
-                    Crear Preparación
-                  </button>
-                </div>
+          {loading ? (
+            <div className="flex items-center justify-center py-20">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
             </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {/* Tarjeta Promocional Grande */}
+              <Link href="/crear-preparacion" className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-600 p-6 flex flex-col justify-center items-center text-center col-span-1 sm:col-span-2 lg:col-span-2 min-h-[250px] border border-blue-500/30 shadow-2xl shadow-blue-900/20 group hover:shadow-blue-900/40 transition-shadow cursor-pointer">
+                  {/* Ruido de fondo simulado con CSS si la imagen falla */}
+                  <div className="absolute inset-0 opacity-20 mix-blend-overlay bg-black"></div>
+                  <div className="relative z-10 max-w-md">
+                    <h3 className="text-2xl font-bold text-white mb-2">¿Tienes material de estudio?</h3>
+                    <p className="text-blue-100 mb-6 text-sm">Sube tus apuntes y ayuda a Gemini a crear mejores planificaciones.</p>
+                    <div className="bg-white text-blue-600 px-6 py-2.5 rounded-full font-bold hover:bg-blue-50 transition-colors shadow-lg flex items-center gap-2 mx-auto text-sm w-fit">
+                      <PlusCircle size={18} />
+                      Crear Preparación
+                    </div>
+                  </div>
+              </Link>
 
-            {/* Mapeo de tarjetas */}
-            {MOCK_PREPARATIONS.map((prep) => (
-              <PrepCard key={prep.id} data={prep} />
-            ))}
-          </div>
+              {/* Mapeo de tarjetas reales */}
+              {preparations.length === 0 ? (
+                <div className="col-span-full text-center py-20">
+                  <div className="text-6xl mb-4">📚</div>
+                  <h3 className="text-2xl font-semibold text-zinc-100 mb-2">
+                    No hay preparaciones aún
+                  </h3>
+                  <p className="text-zinc-400">
+                    Sé el primero en crear una preparación
+                  </p>
+                </div>
+              ) : (
+                preparations.map((prep) => (
+                  <PrepCard key={prep.id} data={prep} />
+                ))
+              )}
+            </div>
+          )}
         </div>
       </main>
     </div>

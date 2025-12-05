@@ -109,4 +109,38 @@ export class FirestoreService {
       throw error;
     }
   }
+
+  static async obtenerTodasPreparaciones(limit?: number): Promise<Preparacion[]> {
+    try {
+      const q = limit
+        ? query(
+            collection(db, this.COLLECTION_NAME),
+            orderBy('createdAt', 'desc'),
+            // Note: You can add a limit here if needed
+          )
+        : query(
+            collection(db, this.COLLECTION_NAME),
+            orderBy('createdAt', 'desc')
+          );
+
+      const querySnapshot = await getDocs(q);
+      const preparaciones: Preparacion[] = [];
+
+      querySnapshot.forEach((doc) => {
+        const data = doc.data();
+        preparaciones.push({
+          id: doc.id,
+          ...data,
+          fechaExamen: data.fechaExamen.toDate(),
+          createdAt: data.createdAt.toDate(),
+          updatedAt: data.updatedAt.toDate(),
+        } as Preparacion);
+      });
+
+      return preparaciones;
+    } catch (error) {
+      console.error('Error getting all preparaciones:', error);
+      throw error;
+    }
+  }
 }
