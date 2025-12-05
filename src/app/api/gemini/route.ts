@@ -4,41 +4,30 @@ import { GeminiPredictionRequest, PrediccionResponse } from '@/types/preparacion
 
 export async function POST(request: NextRequest) {
   try {
-    // Verificar que la API key esté disponible
-    const apiKey = process.env.GEMINI_API_KEY;
+    const body = await request.json();
+    const { action, data, userApiKey, userModel } = body;
+
+    // Use user's API key if provided, otherwise fall back to server key
+    const apiKey = userApiKey || process.env.GEMINI_API_KEY;
 
     if (!apiKey) {
-      console.error('GEMINI_API_KEY no está configurada');
       return NextResponse.json(
-        {
-          success: false,
-          error: 'API key de Gemini no configurada en el servidor',
-        },
+        { success: false, error: 'API key de Gemini no configurada. Por favor, configura tu API key en tu perfil.' },
         { status: 500 }
       );
     }
 
     const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({ model: 'gemini-2.5-pro' });
 
-    const body = await request.json();
-    const { action, data } = body;
+    // Use user's selected model if provided, otherwise default to gemini-2.0-flash
+    const modelName = userModel || 'gemini-2.0-flash';
+    const model = genAI.getGenerativeModel({ model: modelName });
 
     console.log('Gemini API - Acción:', action);
 
     if (action === 'analizar') {
       const prediccion = await analizarYPredecir(model, data as GeminiPredictionRequest);
       return NextResponse.json({ success: true, data: prediccion });
-    }
-
-    if (action === 'generarEjercicios') {
-      const ejercicios = await generarEjerciciosPorTema(
-        model,
-        data.tema,
-        data.asignatura,
-        data.contexto
-      );
-      return NextResponse.json({ success: true, data: ejercicios });
     }
 
     if (action === 'generarLatex') {
@@ -57,14 +46,6 @@ export async function POST(request: NextRequest) {
     );
   } catch (error) {
     console.error('Error in Gemini API route:', error);
-
-    // Mostrar más detalles del error
-    const errorMessage = error instanceof Error
-      ? `${error.message}\n${error.stack}`
-      : 'Error desconocido';
-
-    console.error('Error completo:', errorMessage);
-
     return NextResponse.json(
       {
         success: false,
@@ -79,193 +60,263 @@ async function analizarYPredecir(
   model: GenerativeModel,
   request: GeminiPredictionRequest
 ): Promise<PrediccionResponse> {
-  try {
-    console.log('Analizando con Gemini...');
-    console.log('Request:', JSON.stringify(request, null, 2));
+  const prompt = construirPromptPrediccion(request);
 
-    const prompt = construirPromptPrediccion(request);
-    console.log('Prompt construido, llamando a Gemini...');
+  console.log('=== PROMPT ENVIADO A GEMINI ===');
+  console.log(prompt.substring(0, 500) + '...');
 
-    const result = await model.generateContent(prompt);
-    const response = await result.response;
-    const text = response.text();
+  const result = await model.generateContent(prompt);
+  const response = await result.response;
+  const text = response.text();
 
-    console.log('Respuesta recibida de Gemini');
-    console.log('Texto:', text.substring(0, 500) + '...');
+  console.log('=== RESPUESTA RAW DE GEMINI ===');
+  console.log(text);
 
-    const jsonMatch = text.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) {
-      console.error('No se encontró JSON en la respuesta');
-      throw new Error('No se pudo extraer JSON de la respuesta de Gemini');
-    }
+  const jsonString = text.replace(/```json\n?|\n?```/g, '').trim();
+  const jsonMatch = jsonString.match(/\{[\s\S]*\}/);
 
-    const prediccion: PrediccionResponse = JSON.parse(jsonMatch[0]);
-    console.log('JSON parseado correctamente');
-    return prediccion;
-  } catch (error) {
-    console.error('Error en analizarYPredecir:', error);
-    throw error;
+  if (!jsonMatch) {
+    console.error('No se pudo extraer JSON. Texto recibido:', text);
+    throw new Error('No se pudo extraer JSON de la respuesta');
   }
-}
 
-interface EjerciciosResponse {
-  ejercicios: Array<{
-    titulo: string;
-    enunciado: string;
-    fuente: string;
-    dificultad: string;
-    solucion?: string;
-  }>;
-}
+  const parsed = JSON.parse(jsonMatch[0]);
 
-async function generarEjerciciosPorTema(
-  model: GenerativeModel,
-  tema: string,
-  asignatura: string,
-  contexto: string
-): Promise<EjerciciosResponse> {
-  try {
-    console.log('Generando ejercicios para tema:', tema);
-    const prompt = construirPromptEjercicios(tema, asignatura, contexto);
-    const result = await model.generateContent(prompt);
-    const response = await result.response;
-    const text = response.text();
+  console.log('=== JSON PARSEADO ===');
+  console.log(JSON.stringify(parsed, null, 2));
+  console.log('=== CANTIDAD DE TEMAS ===', parsed.temas?.length || 0);
 
-    const jsonMatch = text.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) {
-      throw new Error('No se pudo extraer JSON de la respuesta de Gemini');
-    }
+  // Asegurarse de que cada tema tenga el campo ejercicios
+  if (parsed.temas) {
+    parsed.temas = parsed.temas.map((tema: any) => ({
+      ...tema,
+      ejercicios: tema.ejercicios || []
+    }));
 
-    return JSON.parse(jsonMatch[0]);
-  } catch (error) {
-    console.error('Error en generarEjerciciosPorTema:', error);
-    throw error;
+    parsed.temas.forEach((tema: any, idx: number) => {
+      console.log(`Tema ${idx + 1}: ${tema.nombre} - ${tema.ejercicios?.length || 0} ejercicios`);
+    });
   }
+
+  return parsed;
 }
 
 async function generarLatexEjercicios(
   model: GenerativeModel,
-  ejercicios: Array<{
-    titulo: string;
-    enunciado: string;
-    dificultad: string;
-    fuente: string;
-  }>,
+  ejercicios: any[],
   tema: string,
   asignatura: string
 ): Promise<string> {
-  try {
-    console.log('Generando LaTeX...');
-    const prompt = construirPromptLatex(ejercicios, tema, asignatura);
-    const result = await model.generateContent(prompt);
-    const response = await result.response;
-    return response.text();
-  } catch (error) {
-    console.error('Error en generarLatexEjercicios:', error);
-    throw error;
-  }
+  const prompt = construirPromptLatex(ejercicios, tema, asignatura);
+  const result = await model.generateContent(prompt);
+  const response = await result.response;
+  let text = response.text();
+  
+  text = text.replace(/```latex\n?|\n?```/g, '').trim();
+  text = text.replace(/^```|```$/g, '').trim();
+  
+  return text;
 }
+
+// --- PROMPTS ---
 
 function construirPromptPrediccion(request: GeminiPredictionRequest): string {
   return `
-Eres un experto en análisis de contenido académico y predicción de exámenes universitarios.
+=== REGLAS OBLIGATORIAS - LECTURA REQUERIDA ===
 
-**Contexto:**
-- Asignatura: ${request.asignatura}
-- Fecha del examen: ${request.fechaExamen}
-- Contexto del profesor: ${request.contextoProfesor}
+PROHIBIDO ABSOLUTAMENTE:
+❌ Inventar temas que no están EXPLÍCITAMENTE mencionados en el material
+❌ Generar ejercicios que no existen en el material
+❌ Agregar contenido de tu conocimiento general
+❌ Hacer suposiciones sobre lo que "debería" estar en el examen
+❌ Incluir temas solo porque son comunes en la asignatura
 
-**Temarios proporcionados:**
-${request.temarios.join('\n\n---\n\n')}
+PERMITIDO ÚNICAMENTE:
+✅ Identificar temas que APARECEN TEXTUALMENTE en el material
+✅ Copiar ejercicios que EXISTEN en el material
+✅ Analizar patrones basados SOLO en el material proporcionado
+✅ Dejar arrays vacíos si no hay ejercicios para un tema
 
-**Pruebas pasadas:**
-${request.pruebasPasadas.join('\n\n---\n\n')}
+=== CONTEXTO ===
+ASIGNATURA: ${request.asignatura}
+CONTEXTO DEL PROFESOR: ${request.contextoProfesor}
 
-**Tarea:**
-Analiza toda la información proporcionada y genera ÚNICAMENTE una predicción de temas con probabilidades.
+=== MATERIAL COMPLETO A ANALIZAR ===
+${request.temarios.join('\n\n═══ SIGUIENTE DOCUMENTO ═══\n\n').substring(0, 25000)}
 
-**IMPORTANTE:**
-- NO generes ejercicios todavía
-- Solo identifica temas y calcula probabilidades
-- Fundamenta cada probabilidad con evidencia de las pruebas pasadas
+=== FIN DEL MATERIAL ===
 
-**Formato de respuesta (SOLO JSON, sin texto adicional):**
+=== TU TAREA (PASO A PASO) ===
 
+PASO 1: LEE TODO EL MATERIAL
+- Lee el material completo de principio a fin
+- Identifica SOLO los temas que están EXPLÍCITAMENTE mencionados
+- Busca títulos, secciones, capítulos, conceptos principales
+- NO agregues temas de tu conocimiento general
+
+PASO 2: EXTRAE LOS TEMAS (3-5 MÁXIMO)
+Para cada tema, pregúntate:
+- ¿Este tema aparece TEXTUALMENTE en el material? (SI/NO)
+- Si NO, descártalo inmediatamente
+- ¿Cuántas veces aparece mencionado?
+- ¿En qué documentos aparece?
+- ¿Qué proporción del material cubre?
+
+PASO 3: CALCULA PROBABILIDADES BASADAS EN:
+- Frecuencia de aparición en el material (principal factor)
+- Énfasis en exámenes anteriores (si están en el material)
+- Contexto del profesor (si menciona preferencias específicas)
+- NO uses tu conocimiento general de la asignatura
+
+PASO 4: EXTRAE EJERCICIOS EXISTENTES
+Busca en el material:
+- Líneas que empiecen con "Ejercicio", "Problem", "Pregunta"
+- Enunciados con verbos como: "Calcule", "Demuestre", "Resuelva", "Determine"
+- Problemas numerados (1., 2., a), b), etc.)
+- Preguntas de exámenes anteriores
+
+CRÍTICO: Si un ejercicio existe en el material, COPIA el texto EXACTO.
+NO reformules, NO mejores, NO inventes similares.
+
+PASO 5: VERIFICA TU RESPUESTA
+Antes de responder, verifica:
+- ¿Cada tema que incluí aparece LITERALMENTE en el material? ✓/✗
+- ¿Cada ejercicio que incluí está COPIADO del material? ✓/✗
+- ¿He inventado algo? Si es SÍ, elimínalo inmediatamente
+
+=== EJEMPLO DE ANÁLISIS CORRECTO ===
+
+Material recibido:
+"Capítulo 3: Matrices. Una matriz es un arreglo rectangular...
+Ejercicio 1: Calcular el determinante de [[1,2],[3,4]]
+Capítulo 4: Vectores en R3..."
+
+Análisis CORRECTO:
 {
-  "resumen": "Resumen breve del análisis general de las pruebas pasadas y qué esperar",
+  "resumen": "El material cubre matrices y vectores en R3 según los capítulos proporcionados",
   "temas": [
     {
-      "nombre": "Nombre exacto del tema (ej: Autómatas Apiladores)",
-      "probabilidad": 85,
-      "descripcion": "Descripción breve del tema",
-      "fundamentacion": "Por qué es probable que entre este tema basado en las pruebas pasadas",
-      "fuentes": ["Examen 2020 - Pregunta 3", "Examen 2022 - Pregunta 1"]
+      "nombre": "Matrices",
+      "probabilidad": 60,
+      "descripcion": "Arreglos rectangulares y operaciones con matrices",
+      "fundamentacion": "Aparece como Capítulo 3 en el material, incluye 1 ejercicio",
+      "fuentes": ["Material proporcionado - Capítulo 3"],
+      "ejercicios": [{
+        "titulo": "Ejercicio 1",
+        "enunciado": "Calcular el determinante de [[1,2],[3,4]]",
+        "fuente": "Material proporcionado",
+        "dificultad": "medio",
+        "solucion": null
+      }]
+    },
+    {
+      "nombre": "Vectores en R3",
+      "probabilidad": 40,
+      "descripcion": "Vectores en espacio tridimensional",
+      "fundamentacion": "Mencionado en Capítulo 4 del material",
+      "fuentes": ["Material proporcionado - Capítulo 4"],
+      "ejercicios": []
     }
   ]
 }
 
-**Criterios para calcular probabilidad:**
-1. Frecuencia del tema en pruebas pasadas (40%)
-2. Contexto del profesor (30%)
-3. Importancia del tema en el temario (20%)
-4. Tendencia histórica (10%)
-
-Genera el JSON ahora (sin markdown, solo el JSON puro):
-`;
+Análisis INCORRECTO (NO HAGAS ESTO):
+{
+  "temas": [
+    {"nombre": "Espacios Vectoriales"}, // ❌ No está en el material
+    {"nombre": "Transformaciones Lineales"}, // ❌ No está en el material
+    // ❌ Inventando ejercicios que no existen
+  ]
 }
 
-function construirPromptEjercicios(
-  tema: string,
-  asignatura: string,
-  contexto: string
-): string {
-  return `
-Eres un experto en ${asignatura} y en creación de ejercicios académicos.
+=== FORMATO DE RESPUESTA ===
 
-**Tema específico:** ${tema}
-
-**Contexto adicional:** ${contexto}
-
-**Tarea:**
-Genera ejercicios ÚNICAMENTE sobre el tema "${tema}" para practicar.
-
-**Requisitos:**
-- Genera entre 8-12 ejercicios
-- Ordénalos por dificultad (fácil, medio, difícil)
-- Incluye ejercicios variados que cubran diferentes aspectos del tema
-- Cada ejercicio debe ser completo y auto-contenido
-- Incluye la solución o hint para cada ejercicio
-
-**Formato de respuesta (SOLO JSON, sin texto adicional):**
+EJEMPLO DE SALIDA ESPERADA:
 
 {
-  "ejercicios": [
+  "resumen": "El material cubre principalmente álgebra lineal y cálculo diferencial...",
+  "temas": [
     {
-      "titulo": "Título descriptivo del ejercicio",
-      "enunciado": "Enunciado completo con todos los datos necesarios",
-      "fuente": "Original / Basado en...",
-      "dificultad": "facil",
-      "solucion": "Solución completa o hint"
+      "nombre": "Matrices y Determinantes",
+      "probabilidad": 85,
+      "descripcion": "Operaciones con matrices, cálculo de determinantes",
+      "fundamentacion": "Aparece en 3 de 4 exámenes anteriores",
+      "fuentes": ["Prueba 2022", "Prueba 2023"],
+      "ejercicios": [
+        {
+          "titulo": "Ejercicio 1",
+          "enunciado": "Calcular el determinante de la matriz A = [[1,2],[3,4]]",
+          "fuente": "Prueba 2022",
+          "dificultad": "medio",
+          "solucion": null
+        }
+      ]
+    },
+    {
+      "nombre": "Derivadas Parciales",
+      "probabilidad": 70,
+      "descripcion": "Cálculo de derivadas parciales de funciones multivariables",
+      "fundamentacion": "Tema recurrente según el contexto del profesor",
+      "fuentes": ["Temario", "Prueba 2023"],
+      "ejercicios": []
     }
   ]
 }
 
-Genera el JSON ahora (sin markdown, solo el JSON puro):
+FORMATO DE RESPUESTA REQUERIDO:
+{
+  "resumen": "Resumen basado SOLO en el material proporcionado",
+  "temas": [
+    {
+      "nombre": "Nombre del tema COMO APARECE en el material",
+      "probabilidad": número entre 0-100,
+      "descripcion": "Descripción basada SOLO en el material",
+      "fundamentacion": "Cita EXACTA de dónde aparece en el material",
+      "fuentes": ["Lista de documentos donde aparece"],
+      "ejercicios": [/* Array de ejercicios COPIADOS del material, o [] si no hay */]
+    }
+  ]
+}
+
+=== CHECKLIST FINAL (VERIFICA ANTES DE RESPONDER) ===
+
+Para CADA tema en tu respuesta, verifica:
+□ ¿El nombre del tema aparece TEXTUALMENTE en el material? (Busca en el texto arriba)
+□ ¿La descripción está basada en información del material, NO en tu conocimiento?
+□ ¿La fundamentación cita evidencia ESPECÍFICA del material?
+□ ¿Los ejercicios están COPIADOS palabra por palabra del material?
+
+Si respondiste NO a cualquiera, ELIMINA ese tema o corrige la información.
+
+ADVERTENCIA FINAL:
+- Responde ÚNICAMENTE con JSON válido
+- NO agregues texto antes o después del JSON
+- NO incluyas explicaciones adicionales
+- Si inventas algo que no está en el material, consideraré tu respuesta como INCORRECTA
+- Es mejor tener pocos temas correctos que muchos temas inventados
+
+Ahora, analiza el material y responde con JSON:
 `;
 }
 
-function construirPromptLatex(
-  ejercicios: Array<{ titulo: string; enunciado: string; dificultad: string; fuente: string }>,
-  tema: string,
-  asignatura: string
-): string {
+function construirPromptLatex(ejercicios: any[], tema: string, asignatura: string): string {
   return `
-Eres un experto en LaTeX y composición de documentos académicos.
+**INSTRUCCIONES CRÍTICAS:**
+1. Genera ÚNICAMENTE código LaTeX válido
+2. NO inventes ejercicios - usa SOLO los ejercicios proporcionados
+3. NO agregues contenido adicional - mantente estrictamente en el material dado
+4. NO generes ejemplos ficticios
+5. Si no hay ejercicios, genera un documento que indique que no se encontraron ejercicios
 
-**Tarea:**
-Genera un documento LaTeX usando la plantilla proporcionada para ejercicios de "${tema}" en ${asignatura}.
+Asignatura: ${asignatura}
+Tema: ${tema}
 
-**Plantilla Base a usar:**
+Ejercicios a incluir:
+${JSON.stringify(ejercicios, null, 2)}
+
+**PLANTILLA LaTeX OBLIGATORIA:**
+Debes usar EXACTAMENTE esta estructura de documento LaTeX:
+
 \\documentclass[12pt]{article}
 \\usepackage[paperwidth=21cm, top=2cm, bottom=2cm]{geometry}
 \\usepackage{fullpage}
@@ -314,30 +365,32 @@ pdfcreator={LaTeX}, pdfproducer={pdfLaTeX}
 \\titleformat{\\section}{\\normalfont\\LARGE\\bfseries\\color{black}\\centering}{\\thesection}{1em}{}[]
 \\titleformat{\\subsection}{\\normalfont\\large\\bfseries\\color{black!70!black}}{\\thesubsection}{1em}{}[]
 
-**Ejercicios a incluir (ordenados por dificultad):**
-${ejercicios.map((ej, idx) => `
-Ejercicio ${idx + 1}: ${ej.titulo} (Dificultad: ${ej.dificultad})
-Fuente: ${ej.fuente}
-Enunciado: ${ej.enunciado}
-`).join('\n')}
+\\begin{document}
 
-**Instrucciones:**
-1. Usa la plantilla exactamente como está
-2. En el \\begin{document}, agrega cada ejercicio con este formato:
-   \\textbf{Ejercicio X: Título}
+\\section{Ejercicios de ${tema}}
 
-   [Fuente: ...]
+**IMPORTANTE:**
+- Organiza los ejercicios por dificultad (subsections: "Dificultad: Fácil", "Dificultad: Media", "Dificultad: Difícil")
+- Para cada ejercicio, usa este formato:
 
-   Enunciado del ejercicio con fórmulas LaTeX apropiadas
+\\textbf{Ejercicio X: [Título del ejercicio]}
 
-   \\vspace{0.5cm}
-   \\rule{\\textwidth}{0.4pt}
-   \\vspace{0.5cm}
+[Fuente: [fuente del ejercicio]]
 
-3. Ordena los ejercicios: primero fáciles, luego medios, luego difíciles
-4. Usa notación matemática LaTeX apropiada ($...$, \\[...\\], etc.)
-5. Termina con \\end{document}
+[Enunciado del ejercicio]
 
-Genera SOLO el código LaTeX completo (sin explicaciones, sin markdown):
+\\vspace{0.5cm}
+\\rule{\\textwidth}{0.4pt}
+\\vspace{0.5cm}
+
+\\end{document}
+
+REGLAS ESTRICTAS:
+1. Retorna SOLO el código LaTeX completo y válido
+2. USA EXACTAMENTE la plantilla proporcionada
+3. NO inventes ejercicios - usa únicamente los proporcionados
+4. Escapa correctamente los caracteres especiales LaTeX
+5. Mantén el formato de separación entre ejercicios con las líneas horizontales
+6. Si no hay ejercicios, indica claramente en el documento que no se encontraron
 `;
 }

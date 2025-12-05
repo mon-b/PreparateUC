@@ -5,7 +5,9 @@ import {
 
 export class GeminiService {
   static async analizarYPredecir(
-    request: GeminiPredictionRequest
+    request: GeminiPredictionRequest,
+    userApiKey?: string,
+    userModel?: string
   ): Promise<PrediccionResponse> {
     try {
       const response = await fetch('/api/gemini', {
@@ -16,6 +18,8 @@ export class GeminiService {
         body: JSON.stringify({
           action: 'analizar',
           data: request,
+          userApiKey,
+          userModel,
         }),
       });
 

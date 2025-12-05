@@ -3,7 +3,6 @@ export interface Preparacion {
   titulo: string;
   descripcion: string;
   asignatura: string;
-  fechaExamen: Date;
   contextoProfesor: string;
   archivosUrls: string[];
   createdAt: Date;
@@ -11,6 +10,27 @@ export interface Preparacion {
   userId: string;
   prediccion?: PrediccionResponse;
   materialesGenerados?: MaterialGenerado[];
+  documentosExtra?: DocumentoExtra[];
+  forumPosts?: ForumPost[];
+  likes?: string[]; // Array of user IDs who liked this preparation
+}
+
+export interface DocumentoExtra {
+  nombre: string;
+  url: string;
+  tipo: string;
+  size: number;
+  uploadedAt: Date;
+}
+
+export interface ForumPost {
+  id?: string;
+  userId: string;
+  userName: string;
+  userAvatar?: string;
+  contenido: string;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 export interface PrediccionResponse {
@@ -24,6 +44,7 @@ export interface TemaPrediccion {
   descripcion: string;
   fundamentacion: string;
   fuentes: string[];
+  ejercicios: Ejercicio[];  // Ejercicios EXTRAÍDOS del material, no generados
 }
 
 export interface MaterialGenerado {
@@ -31,7 +52,6 @@ export interface MaterialGenerado {
   temaNombre: string;
   ejercicios: Ejercicio[];
   latex?: string;
-  pdfUrl?: string;
   createdAt: Date;
 }
 
@@ -48,14 +68,20 @@ export interface GeminiPredictionRequest {
   temarios: string[];
   pruebasPasadas: string[];
   asignatura: string;
-  fechaExamen: string;
 }
 
 export interface FormData {
   titulo: string;
   descripcion: string;
   asignatura: string;
-  fechaExamen: string;
   contextoProfesor: string;
   archivos: File[];
+}
+
+export interface UserSettings {
+  userId: string;
+  geminiApiKey?: string;
+  geminiModel?: string;
+  createdAt: Date;
+  updatedAt: Date;
 }

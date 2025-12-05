@@ -6,6 +6,106 @@ import { useAuth } from '@/hooks/useAuth';
 import { FirestoreService } from '@/services/firestore.service';
 import { Preparacion } from '@/types/preparacion';
 import AuthGuard from '@/components/AuthGuard';
+import { Loader2, User, BookOpen, Calendar, MoreHorizontal, PlusCircle, FileText } from 'lucide-react';
+
+// Helper function to get random color gradient
+const getRandomColor = () => {
+  const colors = [
+    "from-blue-600 to-indigo-900",
+    "from-emerald-600 to-teal-900",
+    "from-orange-600 to-red-900",
+    "from-purple-600 to-pink-900",
+    "from-cyan-600 to-blue-900",
+    "from-rose-600 to-red-900",
+    "from-violet-600 to-purple-900",
+    "from-amber-600 to-orange-900",
+  ];
+  return colors[Math.floor(Math.random() * colors.length)];
+};
+
+// Helper function to format date
+const getRelativeTime = (date: Date) => {
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffMins = Math.floor(diffMs / 60000);
+  const diffHours = Math.floor(diffMs / 3600000);
+  const diffDays = Math.floor(diffMs / 86400000);
+
+  if (diffMins < 60) return `Hace ${diffMins} min`;
+  if (diffHours < 24) return `Hace ${diffHours} horas`;
+  if (diffDays === 1) return 'Ayer';
+  if (diffDays < 7) return `Hace ${diffDays} días`;
+  return `Hace ${Math.floor(diffDays / 7)} sem`;
+};
+
+// Prep Card Component
+interface PrepCardProps {
+  prep: Preparacion;
+}
+
+const PrepCard = ({ prep }: PrepCardProps) => {
+  const color = getRandomColor();
+  const tags = (prep.prediccion?.temas || []).slice(0, 2).map(t => t.nombre);
+
+  return (
+    <Link href={`/preparaciones/${prep.id}`}>
+      <div className="group relative break-inside-avoid mb-6 cursor-pointer">
+        <div className="relative overflow-hidden rounded-2xl bg-zinc-900 border border-zinc-800 transition-transform duration-300 group-hover:-translate-y-1">
+          {/* Header con gradiente */}
+          <div className={`h-48 w-full bg-gradient-to-br ${color} p-4 flex flex-col justify-between`}>
+            <div className="flex justify-between items-start opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+              <span className="bg-black/40 backdrop-blur-md px-2 py-1 rounded text-xs text-white border border-white/10">
+                {prep.asignatura}
+              </span>
+              <button
+                onClick={(e) => {
+                  e.preventDefault();
+                  // Add options menu here
+                }}
+                className="bg-black/40 backdrop-blur-md p-1.5 rounded-full hover:bg-white/20 transition-colors text-white"
+              >
+                <MoreHorizontal size={16} />
+              </button>
+            </div>
+          </div>
+
+          {/* Contenido */}
+          <div className="p-4">
+            <h3 className="text-zinc-100 font-semibold text-lg leading-tight mb-1 group-hover:text-blue-400 transition-colors">
+              {prep.titulo}
+            </h3>
+
+            <div className="flex items-center gap-2 text-xs text-zinc-400 mb-3">
+              <Calendar size={12} />
+              <span>{getRelativeTime(prep.createdAt)}</span>
+            </div>
+
+            {tags.length > 0 && (
+              <div className="flex flex-wrap gap-2 mb-4">
+                {tags.map(tag => (
+                  <span key={tag} className="px-2 py-0.5 rounded-full bg-zinc-800 text-zinc-400 text-[10px] border border-zinc-700">
+                    {tag}
+                  </span>
+                ))}
+              </div>
+            )}
+
+            <div className="flex items-center justify-between border-t border-zinc-800 pt-3 mt-2">
+              <div className="flex items-center gap-1.5 text-zinc-400">
+                <FileText size={16} />
+                <span className="text-xs font-medium">{prep.archivosUrls.length} archivo(s)</span>
+              </div>
+              <div className="flex items-center gap-1.5 text-zinc-400 hover:text-blue-400 transition-colors">
+                <BookOpen size={16} />
+                <span className="text-xs">{prep.prediccion?.temas?.length || 0} tema(s)</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </Link>
+  );
+};
 
 function MisPreparacionesContent() {
   const { user } = useAuth();
@@ -28,111 +128,90 @@ function MisPreparacionesContent() {
       setPreparaciones(data);
     } catch (err) {
       console.error('Error loading preparaciones:', err);
-      setError('Error al cargar las preparaciones');
+      setError('Error al cargar tus preparaciones');
     } finally {
       setLoading(false);
     }
   };
 
-  const formatDate = (date: Date) => {
-    return new Date(date).toLocaleDateString('es-ES', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-    });
-  };
-
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      <div className="min-h-screen bg-black flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-blue-400" />
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="max-w-4xl mx-auto p-6">
-        <div className="bg-red-900/20 border border-red-500/50 rounded-lg p-4">
-          <p className="text-red-400">{error}</p>
+      <div className="min-h-screen bg-black flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-red-400 mb-4">{error}</p>
+          <button
+            onClick={loadPreparaciones}
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            Reintentar
+          </button>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="max-w-6xl mx-auto p-6">
-      <div className="flex justify-between items-center mb-8">
-        <h1 className="text-3xl font-bold text-zinc-100">Mis Preparaciones</h1>
-        <Link
-          href="/crear-preparacion"
-          className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-semibold shadow-lg shadow-blue-900/30"
-        >
-          + Nueva Preparación
-        </Link>
-      </div>
-
-      {preparaciones.length === 0 ? (
-        <div className="bg-zinc-900 border border-zinc-800 rounded-xl shadow-lg p-12 text-center">
-          <div className="text-6xl mb-4">📚</div>
-          <h2 className="text-2xl font-semibold text-zinc-100 mb-2">
-            No tienes preparaciones aún
-          </h2>
-          <p className="text-zinc-400 mb-6">
-            Crea tu primera preparación para comenzar a estudiar con IA
-          </p>
+    <div className="min-h-screen bg-black">
+      <div className="p-6 md:p-8 max-w-7xl mx-auto">
+        <div className="flex items-end justify-between mb-8">
+          <div>
+            <h2 className="text-3xl font-bold text-white mb-2 tracking-tight">
+              Mis Preparaciones
+            </h2>
+            <p className="text-zinc-500">
+              {preparaciones.length} {preparaciones.length === 1 ? 'preparación' : 'preparaciones'}
+            </p>
+          </div>
           <Link
             href="/crear-preparacion"
-            className="inline-block px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-semibold shadow-lg shadow-blue-900/30"
+            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors font-medium"
           >
-            Crear Preparación
+            <PlusCircle size={20} />
+            <span>Nueva Preparación</span>
           </Link>
         </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {preparaciones.map((prep) => (
-            <div
-              key={prep.id}
-              className="bg-zinc-900 border border-zinc-800 rounded-xl shadow-lg p-6 hover:border-zinc-700 transition-all"
+
+        {preparaciones.length === 0 ? (
+          <div className="text-center py-20">
+            <div className="text-6xl mb-4">📚</div>
+            <h3 className="text-2xl font-semibold text-zinc-100 mb-2">
+              No tienes preparaciones aún
+            </h3>
+            <p className="text-zinc-400 mb-6">
+              Crea tu primera preparación para empezar
+            </p>
+            <Link
+              href="/crear-preparacion"
+              className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors font-medium"
             >
-              <h3 className="text-xl font-semibold text-zinc-100 mb-2">
-                {prep.titulo}
-              </h3>
-              <div className="space-y-2 text-sm text-zinc-400">
-                <p>
-                  <span className="font-medium text-zinc-300">Asignatura:</span> {prep.asignatura}
-                </p>
-                <p>
-                  <span className="font-medium text-zinc-300">Fecha del examen:</span>{' '}
-                  {formatDate(prep.fechaExamen)}
-                </p>
-                <p>
-                  <span className="font-medium text-zinc-300">Creado:</span>{' '}
-                  {formatDate(prep.createdAt)}
-                </p>
-              </div>
-              <p className="text-sm text-zinc-300 mt-4 line-clamp-2">
-                {prep.descripcion}
-              </p>
-              <div className="mt-4 pt-4 border-t border-zinc-800">
-                <div className="text-xs text-zinc-500">
-                  {prep.archivosUrls.length} archivo(s) · {prep.prediccion?.categorias.length || 0} categoría(s)
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
+              <PlusCircle size={20} />
+              <span>Crear Preparación</span>
+            </Link>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {preparaciones.map((prep) => (
+              <PrepCard key={prep.id} prep={prep} />
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
 
 export default function MisPreparacionesPage() {
   return (
-    <main className="min-h-screen bg-black">
-      <AuthGuard>
-        <MisPreparacionesContent />
-      </AuthGuard>
-    </main>
+    <AuthGuard>
+      <MisPreparacionesContent />
+    </AuthGuard>
   );
 }

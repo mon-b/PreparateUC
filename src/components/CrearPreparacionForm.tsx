@@ -5,8 +5,11 @@ import { useAuth } from '@/hooks/useAuth';
 import { StorageService } from '@/services/storage.service';
 import { GeminiService } from '@/services/gemini.service';
 import { FirestoreService } from '@/services/firestore.service';
+import { UserSettingsService } from '@/services/userSettings.service';
 import { FormData, GeminiPredictionRequest, PrediccionResponse } from '@/types/preparacion';
 import TablaPrediccion from './TablaPrediccion';
+import { useRouter } from 'next/navigation';
+
 
 interface FileUploadProgress {
   [key: number]: number;
@@ -14,11 +17,12 @@ interface FileUploadProgress {
 
 export default function CrearPreparacionForm() {
   const { user } = useAuth();
+  const router = useRouter();
+
   const [formData, setFormData] = useState<FormData>({
     titulo: '',
     descripcion: '',
     asignatura: '',
-    fechaExamen: '',
     contextoProfesor: '',
     archivos: [],
   });
@@ -86,33 +90,47 @@ export default function CrearPreparacionForm() {
       );
 
       setCurrentStep('Analizando contenido con Gemini AI...');
+
+      // Fetch user settings for API key and model
+      const userSettings = await UserSettingsService.getUserSettings(user.uid);
+
       const geminiRequest: GeminiPredictionRequest = {
         contextoProfesor: formData.contextoProfesor,
         temarios: textosExtraidos,
         pruebasPasadas: textosExtraidos,
         asignatura: formData.asignatura,
-        fechaExamen: formData.fechaExamen,
       };
 
-      const prediccionResult = await GeminiService.analizarYPredecir(geminiRequest);
+      const prediccionResult = await GeminiService.analizarYPredecir(
+        geminiRequest,
+        userSettings?.geminiApiKey,
+        userSettings?.geminiModel
+      );
       setPrediccion(prediccionResult);
 
       setCurrentStep('Guardando predicción en Firestore...');
+
+      if (!user) {
+        throw new Error('Debes estar autenticado para crear una preparación');
+      }
+
       const preparacionData = {
         titulo: formData.titulo,
         descripcion: formData.descripcion,
         asignatura: formData.asignatura,
-        fechaExamen: new Date(formData.fechaExamen),
         contextoProfesor: formData.contextoProfesor,
         archivosUrls: uploadedUrls,
         createdAt: new Date(),
         updatedAt: new Date(),
-        userId: 'temp-user-id',
+        userId: user.uid,
         prediccion: prediccionResult,
         materialesGenerados: [],
+        likes: [],
       };
 
       const docId = await FirestoreService.crearPreparacion(preparacionData);
+        router.push(`/preparaciones/${docId}`);
+      return;
       setPreparacionId(docId);
 
       setCurrentStep('¡Predicción generada exitosamente!');
@@ -133,7 +151,6 @@ export default function CrearPreparacionForm() {
       titulo: '',
       descripcion: '',
       asignatura: '',
-      fechaExamen: '',
       contextoProfesor: '',
       archivos: [],
     });
@@ -177,37 +194,20 @@ export default function CrearPreparacionForm() {
           />
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div>
-            <label htmlFor="asignatura" className="block text-sm font-medium text-zinc-300 mb-2">
-              Asignatura
-            </label>
-            <input
-              type="text"
-              id="asignatura"
-              name="asignatura"
-              value={formData.asignatura}
-              onChange={handleInputChange}
-              required
-              className="w-full px-4 py-2 bg-zinc-800 border border-zinc-700 text-zinc-100 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent placeholder:text-zinc-500"
-              placeholder="Ej: Cálculo 1, Física 2..."
-            />
-          </div>
-
-          <div>
-            <label htmlFor="fechaExamen" className="block text-sm font-medium text-zinc-300 mb-2">
-              Fecha del Examen
-            </label>
-            <input
-              type="date"
-              id="fechaExamen"
-              name="fechaExamen"
-              value={formData.fechaExamen}
-              onChange={handleInputChange}
-              required
-              className="w-full px-4 py-2 bg-zinc-800 border border-zinc-700 text-zinc-100 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            />
-          </div>
+        <div>
+          <label htmlFor="asignatura" className="block text-sm font-medium text-zinc-300 mb-2">
+            Asignatura
+          </label>
+          <input
+            type="text"
+            id="asignatura"
+            name="asignatura"
+            value={formData.asignatura}
+            onChange={handleInputChange}
+            required
+            className="w-full px-4 py-2 bg-zinc-800 border border-zinc-700 text-zinc-100 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent placeholder:text-zinc-500"
+            placeholder="Ej: Cálculo 1, Física 2..."
+          />
         </div>
 
         <div>
