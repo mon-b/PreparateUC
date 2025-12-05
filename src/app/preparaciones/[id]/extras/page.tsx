@@ -1,10 +1,13 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Upload, File, Trash2, Download, Calendar, Loader2, FileText } from 'lucide-react';
+import { Upload, File, Trash2, Download, Calendar, Loader2, FileText, Wifi, WifiOff, Lock } from 'lucide-react';
 import { FirestoreService } from '@/services/firestore.service';
 import { StorageService } from '@/services/storage.service';
 import { Preparacion, DocumentoExtra } from '@/types/preparacion';
+import { doc, onSnapshot } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
+import { useAuth } from '@/hooks/useAuth';
 
 export default function DocumentosExtraPage({
   params,
@@ -15,25 +18,73 @@ export default function DocumentosExtraPage({
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
+  const [isConnected, setIsConnected] = useState(true);
+  const { user } = useAuth();
 
   useEffect(() => {
-    fetchPreparacion();
-  }, [params.id]);
+    // Set up real-time listener
+    const docRef = doc(db, 'preparaciones', params.id);
 
-  const fetchPreparacion = async () => {
-    try {
-      const data = await FirestoreService.obtenerPreparacion(params.id);
-      setPreparacion(data);
-    } catch (error) {
-      console.error('Error al obtener preparación:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+    const unsubscribe = onSnapshot(
+      docRef,
+      (docSnap) => {
+        if (docSnap.exists()) {
+          const data = docSnap.data();
+
+          // Convert documentosExtra dates
+          const documentosExtra = data.documentosExtra?.map((doc: any) => ({
+            ...doc,
+            uploadedAt: doc.uploadedAt?.toDate ? doc.uploadedAt.toDate() : doc.uploadedAt,
+          })) || [];
+
+          // Convert materialesGenerados dates
+          const materialesGenerados = data.materialesGenerados?.map((material: any) => ({
+            ...material,
+            createdAt: material.createdAt?.toDate ? material.createdAt.toDate() : material.createdAt,
+          })) || [];
+
+          // Convert forumPosts dates
+          const forumPosts = data.forumPosts?.map((post: any) => ({
+            ...post,
+            createdAt: post.createdAt?.toDate ? post.createdAt.toDate() : post.createdAt,
+            updatedAt: post.updatedAt?.toDate ? post.updatedAt.toDate() : post.updatedAt,
+          })) || [];
+
+          setPreparacion({
+            id: docSnap.id,
+            ...data,
+            fechaExamen: data.fechaExamen.toDate(),
+            createdAt: data.createdAt.toDate(),
+            updatedAt: data.updatedAt.toDate(),
+            documentosExtra,
+            materialesGenerados,
+            forumPosts,
+          } as Preparacion);
+
+          setIsConnected(true);
+          setLoading(false);
+        }
+      },
+      (error) => {
+        console.error('Error en listener real-time:', error);
+        setIsConnected(false);
+      }
+    );
+
+    // Cleanup listener on unmount
+    return () => unsubscribe();
+  }, [params.id]);
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0 || !preparacion) return;
+
+    // Check ownership
+    if (!user || preparacion.userId !== user.uid) {
+      alert('No tienes permiso para subir archivos a esta preparación');
+      e.target.value = '';
+      return;
+    }
 
     setUploading(true);
     setUploadProgress(0);
@@ -63,7 +114,7 @@ export default function DocumentosExtraPage({
         documentosExtra: documentosActualizados,
       });
 
-      await fetchPreparacion();
+      // No need to fetch - real-time listener will update automatically
     } catch (error) {
       console.error('Error al subir archivo:', error);
       alert('Error al subir el archivo. Inténtalo de nuevo.');
@@ -76,6 +127,12 @@ export default function DocumentosExtraPage({
 
   const handleDeleteDocument = async (index: number) => {
     if (!preparacion || !preparacion.documentosExtra) return;
+
+    // Check ownership
+    if (!user || preparacion.userId !== user.uid) {
+      alert('No tienes permiso para eliminar archivos de esta preparación');
+      return;
+    }
 
     const confirmDelete = window.confirm(
       '¿Estás seguro de que quieres eliminar este documento?'
@@ -91,7 +148,7 @@ export default function DocumentosExtraPage({
         documentosExtra: documentosActualizados,
       });
 
-      await fetchPreparacion();
+      // No need to fetch - real-time listener will update automatically
     } catch (error) {
       console.error('Error al eliminar documento:', error);
       alert('Error al eliminar el documento. Inténtalo de nuevo.');
@@ -123,31 +180,58 @@ export default function DocumentosExtraPage({
   }
 
   const documentosExtra = preparacion.documentosExtra || [];
+  const isOwner = user && preparacion.userId === user.uid;
 
   return (
     <div>
       <div className="mb-8">
-        <div className="flex items-center gap-3 mb-3">
-          <Upload className="w-8 h-8 text-blue-400" />
-          <h1 className="text-3xl font-bold text-white">
-            Documentos Extra
-          </h1>
+        <div className="flex items-center justify-between">
+          <div>
+            <div className="flex items-center gap-3 mb-3">
+              <Upload className="w-8 h-8 text-blue-400" />
+              <h1 className="text-3xl font-bold text-white">
+                Documentos Extra
+              </h1>
+              {!isOwner && (
+                <div className="flex items-center gap-2 px-3 py-1 bg-zinc-800 border border-zinc-700 rounded-lg">
+                  <Lock className="w-4 h-4 text-zinc-500" />
+                  <span className="text-sm text-zinc-500">Solo lectura</span>
+                </div>
+              )}
+            </div>
+            <p className="text-zinc-400">
+              {isOwner
+                ? 'Sube documentos adicionales para tener todo organizado en un solo lugar'
+                : 'Documentos adicionales de esta preparación (solo el propietario puede subir archivos)'}
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            {isConnected ? (
+              <>
+                <Wifi className="w-5 h-5 text-green-400" />
+                <span className="text-sm text-green-400">En vivo</span>
+              </>
+            ) : (
+              <>
+                <WifiOff className="w-5 h-5 text-red-400" />
+                <span className="text-sm text-red-400">Desconectado</span>
+              </>
+            )}
+          </div>
         </div>
-        <p className="text-zinc-400">
-          Sube documentos adicionales para tener todo organizado en un solo lugar
-        </p>
       </div>
 
       {/* Upload Area */}
-      <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-6 mb-6">
-        <label
-          htmlFor="file-upload"
-          className={`flex flex-col items-center justify-center w-full h-48 border-2 border-dashed rounded-xl cursor-pointer transition-colors ${
-            uploading
-              ? 'border-zinc-700 bg-zinc-800/50 cursor-not-allowed'
-              : 'border-blue-500/50 bg-blue-500/10 hover:bg-blue-500/20 hover:border-blue-500'
-          }`}
-        >
+      {isOwner && (
+        <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-6 mb-6">
+          <label
+            htmlFor="file-upload"
+            className={`flex flex-col items-center justify-center w-full h-48 border-2 border-dashed rounded-xl cursor-pointer transition-colors ${
+              uploading
+                ? 'border-zinc-700 bg-zinc-800/50 cursor-not-allowed'
+                : 'border-blue-500/50 bg-blue-500/10 hover:bg-blue-500/20 hover:border-blue-500'
+            }`}
+          >
           {uploading ? (
             <div className="flex flex-col items-center">
               <Loader2 className="w-12 h-12 text-blue-400 animate-spin mb-4" />
@@ -179,7 +263,8 @@ export default function DocumentosExtraPage({
             disabled={uploading}
           />
         </label>
-      </div>
+        </div>
+      )}
 
       {/* Documents List */}
       {documentosExtra.length === 0 ? (
@@ -233,13 +318,15 @@ export default function DocumentosExtraPage({
                   >
                     <Download className="w-5 h-5" />
                   </a>
-                  <button
-                    onClick={() => handleDeleteDocument(index)}
-                    className="p-2 text-red-400 hover:bg-red-500/20 rounded-lg transition-colors"
-                    title="Eliminar"
-                  >
-                    <Trash2 className="w-5 h-5" />
-                  </button>
+                  {isOwner && (
+                    <button
+                      onClick={() => handleDeleteDocument(index)}
+                      className="p-2 text-red-400 hover:bg-red-500/20 rounded-lg transition-colors"
+                      title="Eliminar"
+                    >
+                      <Trash2 className="w-5 h-5" />
+                    </button>
+                  )}
                 </div>
               </div>
             </div>

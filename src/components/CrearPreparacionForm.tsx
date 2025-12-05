@@ -100,6 +100,11 @@ export default function CrearPreparacionForm() {
       setPrediccion(prediccionResult);
 
       setCurrentStep('Guardando predicción en Firestore...');
+
+      if (!user) {
+        throw new Error('Debes estar autenticado para crear una preparación');
+      }
+
       const preparacionData = {
         titulo: formData.titulo,
         descripcion: formData.descripcion,
@@ -108,7 +113,7 @@ export default function CrearPreparacionForm() {
         archivosUrls: uploadedUrls,
         createdAt: new Date(),
         updatedAt: new Date(),
-        userId: 'temp-user-id',
+        userId: user.uid,
         prediccion: prediccionResult,
         materialesGenerados: [],
       };

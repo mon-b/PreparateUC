@@ -144,11 +144,40 @@ export class FirestoreService {
 
       querySnapshot.forEach((doc) => {
         const data = doc.data();
+
+        // Convert materialesGenerados dates
+        const materialesGenerados = data.materialesGenerados?.map((material: any) => ({
+          ...material,
+          createdAt: material.createdAt?.toDate ? material.createdAt.toDate() : material.createdAt,
+        })) || [];
+
+        // Convert documentosExtra dates
+        const documentosExtra = data.documentosExtra?.map((d: any) => ({
+          ...d,
+          uploadedAt: d.uploadedAt?.toDate ? d.uploadedAt.toDate() : d.uploadedAt,
+        })) || [];
+
+        // Convert forumPosts dates
+        const forumPosts = data.forumPosts?.map((post: any) => ({
+          ...post,
+          createdAt: post.createdAt?.toDate ? post.createdAt.toDate() : post.createdAt,
+          updatedAt: post.updatedAt?.toDate ? post.updatedAt.toDate() : post.updatedAt,
+        })) || [];
+
         preparaciones.push({
           id: doc.id,
           ...data,
+<<<<<<< HEAD
           createdAt: data.createdAt.toDate(),
           updatedAt: data.updatedAt.toDate(),
+=======
+          fechaExamen: data.fechaExamen?.toDate ? data.fechaExamen.toDate() : new Date(),
+          createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : new Date(),
+          updatedAt: data.updatedAt?.toDate ? data.updatedAt.toDate() : new Date(),
+          materialesGenerados,
+          documentosExtra,
+          forumPosts,
+>>>>>>> ae8d5f630b654567ab68f9a15535f2e7f9a28bc6
         } as Preparacion);
       });
 
@@ -177,11 +206,40 @@ export class FirestoreService {
 
       querySnapshot.forEach((doc) => {
         const data = doc.data();
+
+        // Convert materialesGenerados dates
+        const materialesGenerados = data.materialesGenerados?.map((material: any) => ({
+          ...material,
+          createdAt: material.createdAt?.toDate ? material.createdAt.toDate() : material.createdAt,
+        })) || [];
+
+        // Convert documentosExtra dates
+        const documentosExtra = data.documentosExtra?.map((d: any) => ({
+          ...d,
+          uploadedAt: d.uploadedAt?.toDate ? d.uploadedAt.toDate() : d.uploadedAt,
+        })) || [];
+
+        // Convert forumPosts dates
+        const forumPosts = data.forumPosts?.map((post: any) => ({
+          ...post,
+          createdAt: post.createdAt?.toDate ? post.createdAt.toDate() : post.createdAt,
+          updatedAt: post.updatedAt?.toDate ? post.updatedAt.toDate() : post.updatedAt,
+        })) || [];
+
         preparaciones.push({
           id: doc.id,
           ...data,
+<<<<<<< HEAD
           createdAt: data.createdAt.toDate(),
           updatedAt: data.updatedAt.toDate(),
+=======
+          fechaExamen: data.fechaExamen?.toDate ? data.fechaExamen.toDate() : new Date(),
+          createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : new Date(),
+          updatedAt: data.updatedAt?.toDate ? data.updatedAt.toDate() : new Date(),
+          materialesGenerados,
+          documentosExtra,
+          forumPosts,
+>>>>>>> ae8d5f630b654567ab68f9a15535f2e7f9a28bc6
         } as Preparacion);
       });
 
