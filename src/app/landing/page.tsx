@@ -159,52 +159,9 @@ export default function SoraLanding() {
 
   return (
     // Forzamos bg-black para asegurar tema oscuro
-    <div className="flex min-h-screen bg-black text-zinc-300 font-sans selection:bg-blue-500/30">
-      
-      {/* SIDEBAR */}
-      <aside className="w-64 fixed inset-y-0 left-0 border-r border-zinc-800 bg-black z-50 flex flex-col p-4 hidden md:flex">
-        <div className="mb-8 px-4">
-            <Logo />
-        </div>
-
-        <div className="space-y-1 flex-1">
-          <div className="px-4 mb-2 text-xs font-semibold text-zinc-500 uppercase tracking-wider">
-            Menu
-          </div>
-          <SidebarItem 
-            icon={Compass} 
-            label="Explorar" 
-            active={activeTab === 'explorar'} 
-            onClick={() => setActiveTab('explorar')}
-          />
-          <SidebarItem 
-            icon={Library} 
-            label="Mis Preparaciones" 
-            active={activeTab === 'mis_preparaciones'}
-            onClick={() => setActiveTab('mis_preparaciones')}
-          />
-          <SidebarItem 
-            icon={Heart} 
-            label="Likes" 
-            active={activeTab === 'likes'}
-            onClick={() => setActiveTab('likes')}
-          />
-        </div>
-
-        <div className="space-y-3 pt-6 border-t border-zinc-800">
-           <button className="w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white p-3 rounded-xl font-medium transition-all shadow-lg shadow-blue-900/20 group">
-            <PlusCircle size={20} className="group-hover:scale-110 transition-transform"/>
-            <span>Nueva Preparación</span>
-          </button>
-          
-          <Link href="/" className="flex items-center gap-3 px-4 py-2 hover:bg-zinc-900 rounded-lg transition-colors text-zinc-500 text-sm">
-             <ArrowLeft size={16} /> Volver al Home
-          </Link>
-        </div>
-      </aside>
-
+    <div className="min-h-screen bg-black text-zinc-300 font-sans selection:bg-blue-500/30">
       {/* MAIN CONTENT */}
-      <main className="flex-1 md:ml-64 min-h-screen relative bg-black">
+      <main className="min-h-screen relative bg-black">
         
         {/* Header Superior */}
         <header className="sticky top-0 z-40 bg-black/80 backdrop-blur-xl border-b border-zinc-800 px-6 py-4 flex items-center justify-between">
