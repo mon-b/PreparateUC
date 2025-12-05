@@ -10,19 +10,29 @@ export interface Preparacion {
   updatedAt: Date;
   userId: string;
   prediccion?: PrediccionResponse;
-  ejerciciosLatex?: string;
+  materialesGenerados?: MaterialGenerado[];
 }
 
 export interface PrediccionResponse {
-  categorias: Categoria[];
   resumen: string;
+  temas: TemaPrediccion[];
 }
 
-export interface Categoria {
+export interface TemaPrediccion {
   nombre: string;
   probabilidad: number;
   descripcion: string;
+  fundamentacion: string;
+  fuentes: string[];
+}
+
+export interface MaterialGenerado {
+  temaId: string;
+  temaNombre: string;
   ejercicios: Ejercicio[];
+  latex?: string;
+  pdfUrl?: string;
+  createdAt: Date;
 }
 
 export interface Ejercicio {

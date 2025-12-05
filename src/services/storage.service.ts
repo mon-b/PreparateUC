@@ -1,5 +1,5 @@
 import { storage } from '@/lib/firebase';
-import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 
 export class StorageService {
   static async uploadFile(
@@ -12,27 +12,22 @@ export class StorageService {
       const fileName = `${timestamp}_${file.name}`;
       const storageRef = ref(storage, `${folder}/${fileName}`);
 
-      const uploadTask = uploadBytesResumable(storageRef, file);
+      // Simular progreso al inicio
+      if (onProgress) {
+        onProgress(0);
+      }
 
-      return new Promise((resolve, reject) => {
-        uploadTask.on(
-          'state_changed',
-          (snapshot) => {
-            const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-            if (onProgress) {
-              onProgress(Math.round(progress));
-            }
-          },
-          (error) => {
-            console.error('Error uploading file:', error);
-            reject(error);
-          },
-          async () => {
-            const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
-            resolve(downloadURL);
-          }
-        );
-      });
+      // Usar uploadBytes en lugar de uploadBytesResumable
+      // uploadBytes no tiene problemas de CORS
+      const snapshot = await uploadBytes(storageRef, file);
+
+      // Simular progreso al finalizar
+      if (onProgress) {
+        onProgress(100);
+      }
+
+      const downloadURL = await getDownloadURL(snapshot.ref);
+      return downloadURL;
     } catch (error) {
       console.error('Error in uploadFile:', error);
       throw error;
@@ -44,14 +39,24 @@ export class StorageService {
     folder: string,
     onProgress?: (fileIndex: number, progress: number) => void
   ): Promise<string[]> {
-    const uploadPromises = files.map((file, index) =>
-      this.uploadFile(file, folder, (progress) => {
+    const uploadedUrls: string[] = [];
+
+    for (let index = 0; index < files.length; index++) {
+      const file = files[index];
+
+      if (onProgress) {
+        onProgress(index, 0);
+      }
+
+      const url = await this.uploadFile(file, folder, (progress) => {
         if (onProgress) {
           onProgress(index, progress);
         }
-      })
-    );
+      });
 
-    return Promise.all(uploadPromises);
+      uploadedUrls.push(url);
+    }
+
+    return uploadedUrls;
   }
 }
