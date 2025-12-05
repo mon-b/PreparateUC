@@ -1,16 +1,14 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   eslint: {
-    // Warning: This allows production builds to successfully complete even if
-    // your project has ESLint errors.
+    // Ignora errores de eslint durante el build para que deploye aunque haya warnings
     ignoreDuringBuilds: true,
   },
   typescript: {
-    // !! WARN !!
-    // Dangerously allow production builds to successfully complete even if
-    // your project has type errors.
+    // Ignora errores de tipado de TS durante el build
     ignoreBuildErrors: true,
   },
+  // ... el resto de tu configuración
 };
 
 export default nextConfig;
