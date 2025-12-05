@@ -1,0 +1,20 @@
+rules_version = '2';
+
+// Reglas de Firebase Storage para PrepárateUC
+service firebase.storage {
+  match /b/{bucket}/o {
+    // Permitir lectura y escritura en la carpeta preparaciones
+    match /preparaciones/{allPaths=**} {
+      // TODO: En producción, agregar autenticación
+      // allow read, write: if request.auth != null;
+
+      // Para desarrollo: permitir todo temporalmente
+      allow read, write: if true;
+    }
+
+    // Bloquear todo lo demás por defecto
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}
