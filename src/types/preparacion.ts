@@ -12,6 +12,7 @@ export interface Preparacion {
   materialesGenerados?: MaterialGenerado[];
   documentosExtra?: DocumentoExtra[];
   forumPosts?: ForumPost[];
+  likes?: string[]; // Array of user IDs who liked this preparation
 }
 
 export interface DocumentoExtra {

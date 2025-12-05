@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { FirestoreService } from '@/services/firestore.service';
 import { Preparacion } from '@/types/preparacion';
+import { useAuth } from '@/hooks/useAuth';
 
 // Helper function to get random color gradient
 const getRandomColor = () => {
@@ -70,71 +71,94 @@ interface PrepCardData {
   title: string;
   author: string;
   course: string;
-  likes: number;
+  likes: string[];
   color: string;
   tags: string[];
   date: string;
 }
 
-const PrepCard = ({ data }: { data: PrepCardData }) => (
-  <Link href={`/preparaciones/${data.id}`}>
-    <div className="group relative break-inside-avoid mb-6 cursor-pointer">
-      <div className="relative overflow-hidden rounded-2xl bg-zinc-900 border border-zinc-800 transition-transform duration-300 group-hover:-translate-y-1">
-        {/* Header con gradiente */}
-        <div className={`h-48 w-full bg-gradient-to-br ${data.color} p-4 flex flex-col justify-between`}>
-          <div className="flex justify-between items-start opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-             <span className="bg-black/40 backdrop-blur-md px-2 py-1 rounded text-xs text-white border border-white/10">
-               {data.course}
-             </span>
-             <button
-               onClick={(e) => {
-                 e.preventDefault();
-                 // Add options menu here
-               }}
-               className="bg-black/40 backdrop-blur-md p-1.5 rounded-full hover:bg-white/20 transition-colors text-white"
-             >
-               <MoreHorizontal size={16} />
-             </button>
-          </div>
-        </div>
-        {/* Contenido */}
-        <div className="p-4">
-          <h3 className="text-zinc-100 font-semibold text-lg leading-tight mb-1 group-hover:text-blue-400 transition-colors">
-            {data.title}
-          </h3>
-          <div className="flex items-center gap-2 text-xs text-zinc-400 mb-3">
-            <User size={12} />
-            <span>{data.author}</span>
-            <span>•</span>
-            <span>{data.date}</span>
-          </div>
-          <div className="flex flex-wrap gap-2 mb-4">
-            {data.tags.map(tag => (
-              <span key={tag} className="px-2 py-0.5 rounded-full bg-zinc-800 text-zinc-400 text-[10px] border border-zinc-700">
-                {tag}
-              </span>
-            ))}
-          </div>
-          <div className="flex items-center justify-between border-t border-zinc-800 pt-3 mt-2">
-            <div className="flex items-center gap-1.5 text-zinc-400 hover:text-pink-500 transition-colors">
-              <Heart size={16} />
-              <span className="text-xs font-medium">{data.likes}</span>
+const PrepCard = ({ data, onLikeToggle, currentUserId }: {
+  data: PrepCardData;
+  onLikeToggle: (prepId: string) => void;
+  currentUserId?: string;
+}) => {
+  const hasLiked = currentUserId ? data.likes.includes(currentUserId) : false;
+  const likesCount = data.likes.length;
+
+  return (
+    <Link href={`/preparaciones/${data.id}`}>
+      <div className="group relative break-inside-avoid mb-6 cursor-pointer">
+        <div className="relative overflow-hidden rounded-2xl bg-zinc-900 border border-zinc-800 transition-transform duration-300 group-hover:-translate-y-1">
+          {/* Header con gradiente */}
+          <div className={`h-48 w-full bg-gradient-to-br ${data.color} p-4 flex flex-col justify-between`}>
+            <div className="flex justify-between items-start opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+               <span className="bg-black/40 backdrop-blur-md px-2 py-1 rounded text-xs text-white border border-white/10">
+                 {data.course}
+               </span>
+               <button
+                 onClick={(e) => {
+                   e.preventDefault();
+                   // Add options menu here
+                 }}
+                 className="bg-black/40 backdrop-blur-md p-1.5 rounded-full hover:bg-white/20 transition-colors text-white"
+               >
+                 <MoreHorizontal size={16} />
+               </button>
             </div>
-            <div className="flex items-center gap-1.5 text-zinc-400 hover:text-blue-400 transition-colors">
-              <BookOpen size={16} />
-              <span className="text-xs">Ver plan</span>
+          </div>
+          {/* Contenido */}
+          <div className="p-4">
+            <h3 className="text-zinc-100 font-semibold text-lg leading-tight mb-1 group-hover:text-blue-400 transition-colors">
+              {data.title}
+            </h3>
+            <div className="flex items-center gap-2 text-xs text-zinc-400 mb-3">
+              <User size={12} />
+              <span>{data.author}</span>
+              <span>•</span>
+              <span>{data.date}</span>
+            </div>
+            <div className="flex flex-wrap gap-2 mb-4">
+              {data.tags.map(tag => (
+                <span key={tag} className="px-2 py-0.5 rounded-full bg-zinc-800 text-zinc-400 text-[10px] border border-zinc-700">
+                  {tag}
+                </span>
+              ))}
+            </div>
+            <div className="flex items-center justify-between border-t border-zinc-800 pt-3 mt-2">
+              <button
+                onClick={(e) => {
+                  e.preventDefault();
+                  if (currentUserId) {
+                    onLikeToggle(data.id);
+                  }
+                }}
+                className={`flex items-center gap-1.5 transition-colors ${
+                  hasLiked
+                    ? 'text-pink-500'
+                    : 'text-zinc-400 hover:text-pink-500'
+                } ${!currentUserId ? 'cursor-not-allowed opacity-50' : ''}`}
+                disabled={!currentUserId}
+              >
+                <Heart size={16} className={hasLiked ? 'fill-pink-500' : ''} />
+                <span className="text-xs font-medium">{likesCount}</span>
+              </button>
+              <div className="flex items-center gap-1.5 text-zinc-400 hover:text-blue-400 transition-colors">
+                <BookOpen size={16} />
+                <span className="text-xs">Ver plan</span>
+              </div>
             </div>
           </div>
         </div>
       </div>
-    </div>
-  </Link>
-);
+    </Link>
+  );
+};
 
 export default function SoraLanding() {
   const [activeTab, setActiveTab] = useState('explorar');
   const [preparations, setPreparations] = useState<PrepCardData[]>([]);
   const [loading, setLoading] = useState(true);
+  const { user } = useAuth();
 
   useEffect(() => {
     loadPreparations();
@@ -151,7 +175,7 @@ export default function SoraLanding() {
         title: prep.titulo,
         author: prep.userId.substring(0, 8) + '...', // Show partial user ID or could fetch user name
         course: prep.asignatura,
-        likes: Math.floor(Math.random() * 500), // Random likes for now
+        likes: prep.likes || [],
         color: getRandomColor(),
         tags: (prep.prediccion?.temas || []).slice(0, 2).map(t => t.nombre),
         date: getRelativeTime(prep.createdAt),
@@ -162,6 +186,35 @@ export default function SoraLanding() {
       console.error('Error loading preparations:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleLikeToggle = async (prepId: string) => {
+    if (!user) return;
+
+    try {
+      // Optimistic update
+      setPreparations(prevPreps =>
+        prevPreps.map(prep => {
+          if (prep.id === prepId) {
+            const hasLiked = prep.likes.includes(user.uid);
+            return {
+              ...prep,
+              likes: hasLiked
+                ? prep.likes.filter(id => id !== user.uid)
+                : [...prep.likes, user.uid]
+            };
+          }
+          return prep;
+        })
+      );
+
+      // Update in Firestore
+      await FirestoreService.toggleLike(prepId, user.uid);
+    } catch (error) {
+      console.error('Error toggling like:', error);
+      // Reload on error to sync state
+      loadPreparations();
     }
   };
 
@@ -225,7 +278,12 @@ export default function SoraLanding() {
                 </div>
               ) : (
                 preparations.map((prep) => (
-                  <PrepCard key={prep.id} data={prep} />
+                  <PrepCard
+                    key={prep.id}
+                    data={prep}
+                    onLikeToggle={handleLikeToggle}
+                    currentUserId={user?.uid}
+                  />
                 ))
               )}
             </div>
