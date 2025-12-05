@@ -4,7 +4,8 @@ import { useState } from 'react';
 import { StorageService } from '@/services/storage.service';
 import { GeminiService } from '@/services/gemini.service';
 import { FirestoreService } from '@/services/firestore.service';
-import { FormData, GeminiPredictionRequest } from '@/types/preparacion';
+import { FormData, GeminiPredictionRequest, PrediccionResponse } from '@/types/preparacion';
+import TablaPrediccion from './TablaPrediccion';
 
 interface FileUploadProgress {
   [key: number]: number;
@@ -25,6 +26,7 @@ export default function CrearPreparacionForm() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [currentStep, setCurrentStep] = useState<string>('');
   const [preparacionId, setPreparacionId] = useState<string | null>(null);
+  const [prediccion, setPrediccion] = useState<PrediccionResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const handleInputChange = (
@@ -90,15 +92,10 @@ export default function CrearPreparacionForm() {
         fechaExamen: formData.fechaExamen,
       };
 
-      const prediccion = await GeminiService.analizarYPredecir(geminiRequest);
+      const prediccionResult = await GeminiService.analizarYPredecir(geminiRequest);
+      setPrediccion(prediccionResult);
 
-      setCurrentStep('Generando documento LaTeX con ejercicios...');
-      const latex = await GeminiService.generarLatexEjercicios(
-        prediccion,
-        formData.asignatura
-      );
-
-      setCurrentStep('Guardando preparación en Firestore...');
+      setCurrentStep('Guardando predicción en Firestore...');
       const preparacionData = {
         titulo: formData.titulo,
         descripcion: formData.descripcion,
@@ -109,15 +106,14 @@ export default function CrearPreparacionForm() {
         createdAt: new Date(),
         updatedAt: new Date(),
         userId: 'temp-user-id',
-        prediccion,
-        ejerciciosLatex: latex,
+        prediccion: prediccionResult,
+        materialesGenerados: [],
       };
 
       const docId = await FirestoreService.crearPreparacion(preparacionData);
       setPreparacionId(docId);
 
-      setCurrentStep('¡Preparación creada exitosamente!');
-      resetForm();
+      setCurrentStep('¡Predicción generada exitosamente!');
     } catch (err) {
       console.error('Error creating preparacion:', err);
       setError(
@@ -351,6 +347,12 @@ export default function CrearPreparacionForm() {
           </button>
         </div>
       </form>
+
+      {prediccion && preparacionId && !isProcessing && (
+        <div className="mt-8">
+          <TablaPrediccion temas={prediccion.temas} preparacionId={preparacionId} />
+        </div>
+      )}
     </div>
   );
 }
