@@ -22,7 +22,6 @@ export default function CrearPreparacionForm() {
     titulo: '',
     descripcion: '',
     asignatura: '',
-    fechaExamen: '',
     contextoProfesor: '',
     archivos: [],
   });
@@ -95,7 +94,6 @@ export default function CrearPreparacionForm() {
         temarios: textosExtraidos,
         pruebasPasadas: textosExtraidos,
         asignatura: formData.asignatura,
-        fechaExamen: formData.fechaExamen,
       };
 
       const prediccionResult = await GeminiService.analizarYPredecir(geminiRequest);
@@ -106,7 +104,6 @@ export default function CrearPreparacionForm() {
         titulo: formData.titulo,
         descripcion: formData.descripcion,
         asignatura: formData.asignatura,
-        fechaExamen: new Date(formData.fechaExamen),
         contextoProfesor: formData.contextoProfesor,
         archivosUrls: uploadedUrls,
         createdAt: new Date(),
@@ -139,7 +136,6 @@ export default function CrearPreparacionForm() {
       titulo: '',
       descripcion: '',
       asignatura: '',
-      fechaExamen: '',
       contextoProfesor: '',
       archivos: [],
     });
@@ -183,37 +179,20 @@ export default function CrearPreparacionForm() {
           />
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div>
-            <label htmlFor="asignatura" className="block text-sm font-medium text-zinc-300 mb-2">
-              Asignatura
-            </label>
-            <input
-              type="text"
-              id="asignatura"
-              name="asignatura"
-              value={formData.asignatura}
-              onChange={handleInputChange}
-              required
-              className="w-full px-4 py-2 bg-zinc-800 border border-zinc-700 text-zinc-100 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent placeholder:text-zinc-500"
-              placeholder="Ej: Cálculo 1, Física 2..."
-            />
-          </div>
-
-          <div>
-            <label htmlFor="fechaExamen" className="block text-sm font-medium text-zinc-300 mb-2">
-              Fecha del Examen
-            </label>
-            <input
-              type="date"
-              id="fechaExamen"
-              name="fechaExamen"
-              value={formData.fechaExamen}
-              onChange={handleInputChange}
-              required
-              className="w-full px-4 py-2 bg-zinc-800 border border-zinc-700 text-zinc-100 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            />
-          </div>
+        <div>
+          <label htmlFor="asignatura" className="block text-sm font-medium text-zinc-300 mb-2">
+            Asignatura
+          </label>
+          <input
+            type="text"
+            id="asignatura"
+            name="asignatura"
+            value={formData.asignatura}
+            onChange={handleInputChange}
+            required
+            className="w-full px-4 py-2 bg-zinc-800 border border-zinc-700 text-zinc-100 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent placeholder:text-zinc-500"
+            placeholder="Ej: Cálculo 1, Física 2..."
+          />
         </div>
 
         <div>

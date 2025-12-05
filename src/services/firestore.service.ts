@@ -20,7 +20,6 @@ export class FirestoreService {
     try {
       const preparacionData = {
         ...preparacion,
-        fechaExamen: Timestamp.fromDate(preparacion.fechaExamen),
         createdAt: Timestamp.fromDate(preparacion.createdAt),
         updatedAt: Timestamp.fromDate(preparacion.updatedAt),
       };
@@ -44,10 +43,6 @@ export class FirestoreService {
     try {
       const docRef = doc(db, this.COLLECTION_NAME, id);
       const updateData: Record<string, unknown> = { ...updates };
-
-      if (updates.fechaExamen) {
-        updateData.fechaExamen = Timestamp.fromDate(updates.fechaExamen);
-      }
 
       // Convert materialesGenerados dates to Timestamps
       if (updates.materialesGenerados) {
@@ -121,7 +116,6 @@ export class FirestoreService {
         return {
           id: docSnap.id,
           ...data,
-          fechaExamen: data.fechaExamen.toDate(),
           createdAt: data.createdAt.toDate(),
           updatedAt: data.updatedAt.toDate(),
           materialesGenerados,
@@ -153,7 +147,6 @@ export class FirestoreService {
         preparaciones.push({
           id: doc.id,
           ...data,
-          fechaExamen: data.fechaExamen.toDate(),
           createdAt: data.createdAt.toDate(),
           updatedAt: data.updatedAt.toDate(),
         } as Preparacion);
@@ -187,7 +180,6 @@ export class FirestoreService {
         preparaciones.push({
           id: doc.id,
           ...data,
-          fechaExamen: data.fechaExamen.toDate(),
           createdAt: data.createdAt.toDate(),
           updatedAt: data.updatedAt.toDate(),
         } as Preparacion);

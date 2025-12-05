@@ -1,9 +1,8 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { Brain, Loader2, Sparkles, TrendingUp, FileText, ChevronRight, ExternalLink } from 'lucide-react';
 import { FirestoreService } from '@/services/firestore.service';
-import { StorageService } from '@/services/storage.service';
 import { Preparacion, Ejercicio } from '@/types/preparacion';
 import Link from 'next/link';
 
@@ -18,6 +17,8 @@ export default function PredictionPage({
   const [currentStep, setCurrentStep] = useState<string>('');
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [latexCode, setLatexCode] = useState<string>('');
+  const overleafFormRef = useRef<HTMLFormElement>(null);
 
   useEffect(() => {
     fetchPreparacion();
@@ -35,34 +36,43 @@ export default function PredictionPage({
   };
 
   const handleGenerarMaterial = async (temaNombre: string) => {
-    if (!preparacion) return;
+    if (!preparacion || !preparacion.prediccion) {
+      setError('No hay predicción disponible para esta preparación');
+      return;
+    }
 
     setGeneratingTema(temaNombre);
     setError(null);
 
     try {
-      // Paso 1: Generar ejercicios con Gemini
-      setCurrentStep('Generando ejercicios con Gemini AI...');
-      const responseEjercicios = await fetch('/api/gemini', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: 'generarEjercicios',
-          data: {
-            tema: temaNombre,
-            asignatura: preparacion.asignatura,
-            contexto: preparacion.contextoProfesor,
-          },
-        }),
-      });
+      // Paso 1: Obtener ejercicios EXTRAÍDOS del tema seleccionado
+      setCurrentStep('Obteniendo ejercicios extraídos del material...');
 
-      if (!responseEjercicios.ok) {
-        throw new Error('Error al generar ejercicios');
+      const temaSeleccionado = preparacion.prediccion.temas.find(
+        t => t.nombre === temaNombre
+      );
+
+      if (!temaSeleccionado) {
+        throw new Error(`No se encontró el tema "${temaNombre}" en la predicción`);
       }
 
-      const { data: ejerciciosData } = await responseEjercicios.json();
+      let ejerciciosExtraidos = temaSeleccionado.ejercicios || [];
 
-      // Paso 2: Generar LaTeX
+      // Si no hay ejercicios extraídos del material, crear uno placeholder
+      if (ejerciciosExtraidos.length === 0) {
+        console.warn(`No se encontraron ejercicios en el material para "${temaNombre}". Generando placeholder.`);
+        ejerciciosExtraidos = [
+          {
+            titulo: `Ejercicio de ${temaNombre}`,
+            enunciado: `[EJERCICIO PENDIENTE]\n\nNo se encontraron ejercicios específicos para este tema en el material adjunto.\n\nPor favor, agrega ejercicios manualmente en Overleaf o sube material que contenga ejercicios explícitos.`,
+            fuente: 'Generado automáticamente',
+            dificultad: 'medio' as const,
+            solucion: null
+          }
+        ];
+      }
+
+      // Paso 2: Generar LaTeX con los ejercicios extraídos
       setCurrentStep('Generando documento LaTeX...');
       const responseLatex = await fetch('/api/gemini', {
         method: 'POST',
@@ -70,7 +80,7 @@ export default function PredictionPage({
         body: JSON.stringify({
           action: 'generarLatex',
           data: {
-            ejercicios: ejerciciosData.ejercicios,
+            ejercicios: ejerciciosExtraidos,
             tema: temaNombre,
             asignatura: preparacion.asignatura,
           },
@@ -81,58 +91,44 @@ export default function PredictionPage({
         throw new Error('Error al generar LaTeX');
       }
 
-      const { data: latexCode } = await responseLatex.json();
+      const { data: latexCodeData } = await responseLatex.json();
+      setLatexCode(latexCodeData);
 
-      // Paso 3: Compilar LaTeX a PDF
-      setCurrentStep('Compilando LaTeX a PDF...');
-      const pdfBlob = await compilarLatexAPDF(latexCode);
-
-      // Paso 4: Subir PDF a Firebase Storage
-      setCurrentStep('Subiendo PDF a Firebase Storage...');
-      const pdfFile = new File([pdfBlob], `${temaNombre}_${Date.now()}.pdf`, {
-        type: 'application/pdf',
-      });
-      const pdfUrl = await StorageService.uploadFile(
-        pdfFile,
-        `preparaciones/${params.id}/materiales`
-      );
-
-      // Paso 5: Actualizar Firestore
-      setCurrentStep('Guardando material generado...');
+      // Paso 3: Guardar en Firestore
+      setCurrentStep('Guardando material...');
       const nuevoMaterial = {
         temaId: temaNombre.toLowerCase().replace(/\s+/g, '-'),
         temaNombre: temaNombre,
-        ejercicios: ejerciciosData.ejercicios,
-        latex: latexCode,
-        pdfUrl: pdfUrl,
+        ejercicios: ejerciciosExtraidos,
+        latex: latexCodeData,
         createdAt: new Date(),
       };
 
-      console.log('=== DEBUG Guardando Material ===');
-      console.log('Nuevo material a guardar:', nuevoMaterial);
-
       const materialesActuales = preparacion.materialesGenerados || [];
-      console.log('Materiales actuales antes de guardar:', materialesActuales);
-
-      const materialesActualizados = [...materialesActuales, nuevoMaterial];
-      console.log('Materiales actualizados a guardar:', materialesActualizados);
-
       await FirestoreService.actualizarPreparacion(params.id, {
-        materialesGenerados: materialesActualizados,
+        materialesGenerados: [...materialesActuales, nuevoMaterial],
       });
 
-      console.log('Material guardado exitosamente en Firestore');
+      // Paso 4: Abrir en Overleaf
+      setCurrentStep('¡Material listo! Abriendo Overleaf...');
 
-      setCurrentStep('¡Material generado exitosamente!');
+      // Intentar abrir automáticamente
+      setTimeout(() => {
+        if (overleafFormRef.current) {
+          overleafFormRef.current.submit();
+        }
+      }, 500);
+
       await fetchPreparacion();
 
       // Show success message
-      setSuccessMessage(`Material para "${temaNombre}" generado exitosamente. Puedes verlo en la sección de Documentos Generados.`);
+      setSuccessMessage(`Material para "${temaNombre}" generado exitosamente y abierto en Overleaf.`);
 
       setTimeout(() => {
         setGeneratingTema(null);
         setCurrentStep('');
         setSuccessMessage(null);
+        setLatexCode('');
       }, 5000);
     } catch (err) {
       console.error('Error generando material:', err);
@@ -141,27 +137,6 @@ export default function PredictionPage({
       );
       setGeneratingTema(null);
       setCurrentStep('');
-    }
-  };
-
-  const compilarLatexAPDF = async (latexCode: string): Promise<Blob> => {
-    try {
-      const response = await fetch('https://latexonline.cc/compile', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-        },
-        body: `text=${encodeURIComponent(latexCode)}`,
-      });
-
-      if (!response.ok) {
-        throw new Error('Error compilando LaTeX');
-      }
-
-      return await response.blob();
-    } catch (error) {
-      console.error('Error en compilarLatexAPDF:', error);
-      throw new Error('No se pudo compilar el documento LaTeX a PDF');
     }
   };
 
@@ -200,6 +175,17 @@ export default function PredictionPage({
 
   return (
     <div>
+      {/* Formulario Oculto para Overleaf */}
+      <form
+        ref={overleafFormRef}
+        action="https://www.overleaf.com/docs"
+        method="post"
+        target="_blank"
+        className="hidden"
+      >
+        <textarea name="snip" readOnly value={latexCode} />
+      </form>
+
       <div className="mb-8">
         <div className="flex items-center gap-3 mb-3">
           <Brain className="w-8 h-8 text-blue-400" />
@@ -247,16 +233,6 @@ export default function PredictionPage({
           <div>
             <p className="text-sm text-zinc-500 mb-1">Asignatura</p>
             <p className="text-white font-medium">{preparacion.asignatura}</p>
-          </div>
-          <div>
-            <p className="text-sm text-zinc-500 mb-1">Fecha de Examen</p>
-            <p className="text-white font-medium">
-              {new Date(preparacion.fechaExamen).toLocaleDateString('es-ES', {
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric',
-              })}
-            </p>
           </div>
           <div>
             <p className="text-sm text-zinc-500 mb-1">Archivos Analizados</p>

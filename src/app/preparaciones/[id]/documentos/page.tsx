@@ -1,7 +1,7 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { FileText, Download, Calendar, Loader2 } from 'lucide-react';
+import { useEffect, useState, useRef } from 'react';
+import { FileText, Download, Calendar, Loader2, ExternalLink } from 'lucide-react';
 import { FirestoreService } from '@/services/firestore.service';
 import { Preparacion } from '@/types/preparacion';
 
@@ -12,6 +12,8 @@ export default function DocumentosGeneradosPage({
 }) {
   const [preparacion, setPreparacion] = useState<Preparacion | null>(null);
   const [loading, setLoading] = useState(true);
+  const [selectedLatex, setSelectedLatex] = useState<string>('');
+  const overleafFormRef = useRef<HTMLFormElement>(null);
 
   useEffect(() => {
     const fetchPreparacion = async () => {
@@ -32,6 +34,15 @@ export default function DocumentosGeneradosPage({
 
     return () => clearInterval(intervalId);
   }, [params.id]);
+
+  const handleOpenInOverleaf = (latex: string) => {
+    setSelectedLatex(latex);
+    setTimeout(() => {
+      if (overleafFormRef.current) {
+        overleafFormRef.current.submit();
+      }
+    }, 100);
+  };
 
   if (loading) {
     return (
@@ -63,6 +74,17 @@ export default function DocumentosGeneradosPage({
 
   return (
     <div>
+      {/* Formulario Oculto para Overleaf */}
+      <form
+        ref={overleafFormRef}
+        action="https://www.overleaf.com/docs"
+        method="post"
+        target="_blank"
+        className="hidden"
+      >
+        <textarea name="snip" readOnly value={selectedLatex} />
+      </form>
+
       <div className="mb-8">
         <div className="flex items-center gap-3 mb-3">
           <FileText className="w-8 h-8 text-blue-400" />
@@ -128,54 +150,43 @@ export default function DocumentosGeneradosPage({
                 </div>
 
                 {material.latex && (
-                  <div className="flex items-center justify-between p-3 bg-zinc-800/50 rounded-lg">
-                    <div>
-                      <p className="text-sm font-medium text-zinc-300">
-                        Código LaTeX
-                      </p>
-                      <p className="text-xs text-zinc-500">
-                        Disponible para compilar
-                      </p>
+                  <div className="p-3 bg-zinc-800/50 rounded-lg">
+                    <div className="flex items-center justify-between mb-3">
+                      <div>
+                        <p className="text-sm font-medium text-zinc-300">
+                          Código LaTeX
+                        </p>
+                        <p className="text-xs text-zinc-500">
+                          Disponible para editar en Overleaf
+                        </p>
+                      </div>
                     </div>
-                    <button
-                      onClick={() => {
-                        const blob = new Blob([material.latex!], { type: 'text/plain' });
-                        const url = URL.createObjectURL(blob);
-                        const a = document.createElement('a');
-                        a.href = url;
-                        a.download = `${material.temaNombre.replace(/\s+/g, '_')}.tex`;
-                        document.body.appendChild(a);
-                        a.click();
-                        document.body.removeChild(a);
-                        URL.revokeObjectURL(url);
-                      }}
-                      className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                    >
-                      <Download className="w-4 h-4" />
-                      <span className="text-sm">Descargar .tex</span>
-                    </button>
-                  </div>
-                )}
-
-                {material.pdfUrl && (
-                  <div className="flex items-center justify-between p-3 bg-zinc-800/50 rounded-lg">
-                    <div>
-                      <p className="text-sm font-medium text-zinc-300">
-                        Documento PDF
-                      </p>
-                      <p className="text-xs text-zinc-500">
-                        PDF compilado
-                      </p>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => handleOpenInOverleaf(material.latex!)}
+                        className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                      >
+                        <ExternalLink className="w-4 h-4" />
+                        <span className="text-sm">Abrir en Overleaf</span>
+                      </button>
+                      <button
+                        onClick={() => {
+                          const blob = new Blob([material.latex!], { type: 'text/plain' });
+                          const url = URL.createObjectURL(blob);
+                          const a = document.createElement('a');
+                          a.href = url;
+                          a.download = `${material.temaNombre.replace(/\s+/g, '_')}.tex`;
+                          document.body.appendChild(a);
+                          a.click();
+                          document.body.removeChild(a);
+                          URL.revokeObjectURL(url);
+                        }}
+                        className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                      >
+                        <Download className="w-4 h-4" />
+                        <span className="text-sm">Descargar .tex</span>
+                      </button>
                     </div>
-                    <a
-                      href={material.pdfUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
-                    >
-                      <Download className="w-4 h-4" />
-                      <span className="text-sm">Ver PDF</span>
-                    </a>
                   </div>
                 )}
               </div>

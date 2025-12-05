@@ -3,7 +3,6 @@ export interface Preparacion {
   titulo: string;
   descripcion: string;
   asignatura: string;
-  fechaExamen: Date;
   contextoProfesor: string;
   archivosUrls: string[];
   createdAt: Date;
@@ -44,6 +43,7 @@ export interface TemaPrediccion {
   descripcion: string;
   fundamentacion: string;
   fuentes: string[];
+  ejercicios: Ejercicio[];  // Ejercicios EXTRAÍDOS del material, no generados
 }
 
 export interface MaterialGenerado {
@@ -51,7 +51,6 @@ export interface MaterialGenerado {
   temaNombre: string;
   ejercicios: Ejercicio[];
   latex?: string;
-  pdfUrl?: string;
   createdAt: Date;
 }
 
@@ -68,14 +67,12 @@ export interface GeminiPredictionRequest {
   temarios: string[];
   pruebasPasadas: string[];
   asignatura: string;
-  fechaExamen: string;
 }
 
 export interface FormData {
   titulo: string;
   descripcion: string;
   asignatura: string;
-  fechaExamen: string;
   contextoProfesor: string;
   archivos: File[];
 }
