@@ -54,20 +54,20 @@ export default function SignInForm() {
 
   return (
     <div className="w-full max-w-md">
-      <form onSubmit={handleSubmit} className="bg-white p-8 rounded-xl shadow-lg space-y-6">
+      <form onSubmit={handleSubmit} className="bg-zinc-900 border border-zinc-800 p-8 rounded-xl shadow-lg space-y-6">
         <div className="text-center mb-8">
-          <h2 className="text-3xl font-bold text-gray-900">Iniciar Sesión</h2>
-          <p className="text-gray-600 mt-2">Accede a tu cuenta</p>
+          <h2 className="text-3xl font-bold text-zinc-100">Iniciar Sesión</h2>
+          <p className="text-zinc-400 mt-2">Accede a tu cuenta</p>
         </div>
 
         {error && (
-          <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-            <p className="text-red-800 text-sm">{error}</p>
+          <div className="bg-red-900/20 border border-red-500/50 rounded-lg p-4">
+            <p className="text-red-400 text-sm">{error}</p>
           </div>
         )}
 
         <div>
-          <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
+          <label htmlFor="email" className="block text-sm font-medium text-zinc-300 mb-2">
             Correo Electrónico
           </label>
           <input
@@ -77,13 +77,13 @@ export default function SignInForm() {
             value={formData.email}
             onChange={handleChange}
             required
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="w-full px-4 py-2 bg-zinc-800 border border-zinc-700 text-zinc-100 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent placeholder:text-zinc-500"
             placeholder="tu@correo.com"
           />
         </div>
 
         <div>
-          <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
+          <label htmlFor="password" className="block text-sm font-medium text-zinc-300 mb-2">
             Contraseña
           </label>
           <input
@@ -93,7 +93,7 @@ export default function SignInForm() {
             value={formData.password}
             onChange={handleChange}
             required
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="w-full px-4 py-2 bg-zinc-800 border border-zinc-700 text-zinc-100 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent placeholder:text-zinc-500"
             placeholder="Tu contraseña"
           />
         </div>
@@ -101,14 +101,14 @@ export default function SignInForm() {
         <button
           type="submit"
           disabled={isLoading}
-          className="w-full py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          className="w-full py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-blue-900/30"
         >
           {isLoading ? 'Iniciando sesión...' : 'Iniciar Sesión'}
         </button>
 
-        <p className="text-center text-sm text-gray-600">
+        <p className="text-center text-sm text-zinc-400">
           ¿No tienes cuenta?{' '}
-          <Link href="/signup" className="text-blue-600 hover:text-blue-700 font-medium">
+          <Link href="/signup" className="text-blue-400 hover:text-blue-300 font-medium">
             Regístrate
           </Link>
         </p>

@@ -7,7 +7,7 @@ export const metadata = {
 
 export default function SignUpPage() {
   return (
-    <main className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center p-6">
+    <main className="min-h-screen bg-black flex items-center justify-center p-6">
       <SignUpForm />
     </main>
   );
