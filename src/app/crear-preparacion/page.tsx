@@ -1,14 +1,14 @@
-import CrearPreparacionForm from '@/components/CrearPreparacionForm';
+'use client';
 
-export const metadata = {
-  title: 'Crear Preparación - PrepárateUC',
-  description: 'Crea una nueva preparación para tu examen con análisis de IA',
-};
+import CrearPreparacionForm from '@/components/CrearPreparacionForm';
+import AuthGuard from '@/components/AuthGuard';
 
 export default function CrearPreparacionPage() {
   return (
-    <main className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
-      <CrearPreparacionForm />
-    </main>
+    <AuthGuard>
+      <main className="min-h-screen bg-black">
+        <CrearPreparacionForm />
+      </main>
+    </AuthGuard>
   );
 }
