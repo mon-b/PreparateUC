@@ -189,6 +189,38 @@ export class FirestoreService {
     }
   }
 
+  static async toggleLike(preparacionId: string, userId: string): Promise<void> {
+    try {
+      const docRef = doc(db, this.COLLECTION_NAME, preparacionId);
+      const docSnap = await getDoc(docRef);
+
+      if (!docSnap.exists()) {
+        throw new Error('Preparación no encontrada');
+      }
+
+      const data = docSnap.data();
+      const currentLikes = data.likes || [];
+      const hasLiked = currentLikes.includes(userId);
+
+      let updatedLikes: string[];
+      if (hasLiked) {
+        // Unlike - remove user from likes array
+        updatedLikes = currentLikes.filter((id: string) => id !== userId);
+      } else {
+        // Like - add user to likes array
+        updatedLikes = [...currentLikes, userId];
+      }
+
+      await updateDoc(docRef, {
+        likes: updatedLikes,
+        updatedAt: Timestamp.now(),
+      });
+    } catch (error) {
+      console.error('Error toggling like:', error);
+      throw error;
+    }
+  }
+
   static async obtenerTodasPreparaciones(limit?: number): Promise<Preparacion[]> {
     try {
       const q = limit
