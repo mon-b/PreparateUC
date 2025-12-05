@@ -110,59 +110,8 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="flex min-h-screen bg-black text-zinc-300 font-sans selection:bg-blue-500/30">
-      {/* --- SIDEBAR (Consistente con Landing) --- */}
-      <aside className="w-64 fixed inset-y-0 left-0 border-r border-zinc-800 bg-black z-50 flex flex-col p-4 hidden md:flex">
-        <div className="mb-8 px-4 flex items-center gap-2">
-          <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white font-bold shadow-lg shadow-blue-900/50">
-            P
-          </div>
-          <h1 className="text-xl font-bold text-white tracking-tight">
-            Preparate<span className="text-blue-500">UC</span>
-          </h1>
-        </div>
-
-        <div className="space-y-1 flex-1">
-          <div className="px-4 mb-2 text-xs font-semibold text-zinc-500 uppercase tracking-wider">
-            Navegación
-          </div>
-          {/* Usamos Link href="/landing" para volver a la app principal */}
-          <SidebarItem
-            icon={Compass}
-            label="Volver a Explorar"
-            href="/landing"
-          />
-          <SidebarItem
-            icon={Library}
-            label="Mis Preparaciones"
-            href="/landing"
-          />
-
-          <div className="px-4 mb-2 mt-6 text-xs font-semibold text-zinc-500 uppercase tracking-wider">
-            Cuenta
-          </div>
-          <SidebarItem
-            icon={Settings}
-            label="Configuración"
-            href="#"
-            active={true}
-          />
-        </div>
-
-        <div className="pt-6 border-t border-zinc-800">
-          <button
-            onClick={handleSignOut}
-            className="flex items-center gap-3 w-full px-4 py-3 rounded-xl text-zinc-400 hover:bg-red-500/10 hover:text-red-400 transition-colors"
-          >
-            <LogOut size={20} />
-            <span className="text-sm font-medium">Cerrar Sesión</span>
-          </button>
-        </div>
-      </aside>
-
-      {/* --- CONTENIDO PRINCIPAL --- */}
-      <main className="flex-1 md:ml-64 min-h-screen bg-black p-6 md:p-12">
-        <div className="max-w-3xl mx-auto space-y-8">
+    <main className="flex-1 md:ml-64 min-h-screen bg-black p-6 md:p-12">
+      <div className="max-w-3xl mx-auto space-y-8">
           {/* Header de Página */}
           <div className="flex items-center gap-4 mb-8">
             <Link
@@ -311,6 +260,5 @@ export default function ProfilePage() {
           </section>
         </div>
       </main>
-    </div>
   );
 }
